@@ -157,11 +157,17 @@ module.exports = function(grunt) {
             var indexOfDjangoEndTag = htmlFileCopy.indexOf(djangoEndTag);
             htmlFileCopy = htmlFileCopy.slice(0, indexOfDjangoStartTag)
               + '{# SCRIPTS #}'
+              + grunt.util.linefeed
               + '{% if DEBUG %}'
-              + htmlFileCopy.substring(indexOfStartTag - 1, indexOfEndTag + options.endTag.length)
+              + grunt.util.linefeed
+              + htmlFileCopy.substring(indexOfStartTag, indexOfEndTag + options.endTag.length)
+              + grunt.util.linefeed
               + '{% else %}'
+              + grunt.util.linefeed
               + scriptTag
+              + grunt.util.linefeed
               + '{% endif %}'
+              + grunt.util.linefeed
               + '{# SCRIPTS END #}'
               + htmlFileCopy.slice(indexOfDjangoEndTag + djangoEndTag.length, htmlFileCopy.length);
 
