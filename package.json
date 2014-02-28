@@ -1,0 +1,45 @@
+{
+  "name": "grunt-django-compressor",
+  "description": "A Grunt plugin to iterate over every html file and compress javascripts and stylesheets.",
+  "version": "0.1.0",
+  "homepage": "https://github.com/cristianrojas/grunt-django-compressor",
+  "author": {
+    "name": "Cristian Rojas",
+    "email": "cristianguillermorojas@gmail.com",
+    "url": "http://cristianrojas.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/cristianrojas/grunt-django-compressor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cristianrojas/grunt-django-compressor/issues"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/cristianrojas/grunt-django-compressor/blob/master/LICENSE-MIT"
+    }
+  ],
+  "engines": {
+    "node": ">= 0.8.0"
+  },
+  "scripts": {
+    "test": "grunt test"
+  },
+  "devDependencies": {
+    "grunt-contrib-jshint": "~0.6.0",
+    "grunt-contrib-clean": "~0.4.0",
+    "grunt-contrib-nodeunit": "~0.2.0",
+    "grunt": "~0.4.2"
+  },
+  "peerDependencies": {
+    "grunt": "~0.4.2"
+  },
+  "keywords": [
+    "gruntplugin"
+  ],
+  "dependencies": {
+    "uglify-js": "~2.4.12"
+  }
+}
