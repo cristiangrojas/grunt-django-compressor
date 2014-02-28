@@ -27,10 +27,13 @@ module.exports = function(grunt) {
       // The path to the static files
       // typically something like: /<django_app_name>/static/
       staticFilesPath: '',
+      // Folder where the generated static files should be
+      destinationFolder: '',
     });
 
     // Don't continue if the staticFilesOption isn't set
     if( options.staticFilesPath === '' ) throw new Error('Please specify the staticFilesPath option.');
+    if( options.destinationFolder === '' ) throw new Error('Please specify the destinationFolder option.');
 
     /*
      * Get html files function
@@ -109,9 +112,9 @@ module.exports = function(grunt) {
           // the same name
           var destFileName = htmlFilePath.split('/').pop().replace('.html', '.js'),
           // destination file path (the same folder as the scripts)
-            destFile = scripts[0].substring(0, scripts[0].lastIndexOf('/') + 1) + destFileName,
+            destFile = options.destinationFolder + destFileName,
           // variable to store the file content
-            _fileContent = '';
+            fileContent = '';
 
           scripts.forEach(function(filepath) {
             // Warn on and remove invalid source files
@@ -123,19 +126,23 @@ module.exports = function(grunt) {
             // Read file source and write in the variable
             var src = grunt.file.read(filepath);
             if( src ){
-              _fileContent += src;
+              fileContent += src;
             }
           });
 
           // Write the stored content in the dest file
-          grunt.file.write(destFile, _fileContent);
+          grunt.file.write(destFile, fileContent);
           // Print a success message.
           grunt.log.writeln('File "' + destFile + '" created.');
 
-//          var minVersionPath = destFile.replace('.js', '.min.js');
-//          var minVersion = UglifyJS.minify(destFile);
-//          grunt.file.write(minVersionPath, minVersion.code);
-//          grunt.log.writeln('File "' + minVersionPath + '" created.');
+          var minVersionPath = destFile.replace('.js', '.min.js');
+          var minVersion = UglifyJS.minify(destFile);
+          grunt.file.write(minVersionPath, minVersion.code);
+          grunt.log.writeln('File "' + minVersionPath + '" created.');
+
+          // TODO fix this hack
+          grunt.file.delete(destFile);
+          grunt.log.writeln('File "' + destFile + '" deleted.');
 
           var djangoStartTag = '{# SCRIPTS #}';
           var djangoEndTag = '{# SCRIPTS END #}';
@@ -144,23 +151,20 @@ module.exports = function(grunt) {
           if( htmlFile.indexOf(djangoStartTag) > -1 ) htmlFileAlreadyParsed = true;
 
           var scriptTag = '<script type="text/javascript" src="'
-            + destFile.replace(options.staticFilesPath, options.staticFilesDjangoPrefix)
+            + minVersionPath.replace(options.staticFilesPath, options.staticFilesDjangoPrefix)
             + '"></script>';
-
-//          console.log(scriptTag);
 
           var newHtmlFile;
 
           if( htmlFileAlreadyParsed ){
-            var htmlFileCopy = htmlFile;
-            var indexOfDjangoStartTag = htmlFileCopy.indexOf(djangoStartTag);
-            var indexOfDjangoEndTag = htmlFileCopy.indexOf(djangoEndTag);
-            htmlFileCopy = htmlFileCopy.slice(0, indexOfDjangoStartTag)
-              + '{# SCRIPTS #}'
+            var indexOfDjangoStartTag = htmlFile.indexOf(djangoStartTag);
+            var indexOfDjangoEndTag = htmlFile.indexOf(djangoEndTag);
+            newHtmlFile = htmlFile.slice(0, indexOfDjangoStartTag)
+              + djangoStartTag
               + grunt.util.linefeed
               + '{% if DEBUG %}'
               + grunt.util.linefeed
-              + htmlFileCopy.substring(indexOfStartTag, indexOfEndTag + options.endTag.length)
+              + htmlFile.substring(indexOfStartTag, indexOfEndTag + options.endTag.length)
               + grunt.util.linefeed
               + '{% else %}'
               + grunt.util.linefeed
@@ -168,20 +172,23 @@ module.exports = function(grunt) {
               + grunt.util.linefeed
               + '{% endif %}'
               + grunt.util.linefeed
-              + '{# SCRIPTS END #}'
-              + htmlFileCopy.slice(indexOfDjangoEndTag + djangoEndTag.length, htmlFileCopy.length);
-
-            newHtmlFile = htmlFileCopy;
+              + djangoEndTag
+              + htmlFile.slice(indexOfDjangoEndTag + djangoEndTag.length, htmlFile.length);
           } else {
-            console.log('html file not parsed');
-            newHtmlFile = htmlFile.substr(0, indexOfStartTag - 1)
-              + '{# SCRIPTS #}'
+            newHtmlFile = htmlFile.substring(0, indexOfStartTag)
+              + djangoStartTag
+              + grunt.util.linefeed
               + '{% if DEBUG %}'
-              + htmlFile.substr(indexOfStartTag - 1, indexOfEndTag + options.endTag.length)
+              + grunt.util.linefeed
+              + htmlFile.substring(indexOfStartTag, indexOfEndTag + options.endTag.length)
+              + grunt.util.linefeed
               + '{% else %}'
+              + grunt.util.linefeed
               + scriptTag
+              + grunt.util.linefeed
               + '{% endif %}'
-              + '{# SCRIPTS END #}'
+              + grunt.util.linefeed
+              + djangoEndTag
               + htmlFile.substr(indexOfEndTag + options.endTag.length, htmlFile.length);
           }
 
