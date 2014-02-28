@@ -74,7 +74,9 @@ module.exports = function(grunt) {
       // Verify if the file has the startTag
       var indexOfStartTag = htmlFile.indexOf(options.startTag);
       if( indexOfStartTag > -1 ){
-        // send the start indexOf number to start looking at this point
+        grunt.log.writeln(options.startTag + ' found in "' + htmlFilePath + '"');
+
+        // send the indexOfStartTag number to start looking at this point
         var indexOfEndTag = htmlFile.indexOf(options.endTag, indexOfStartTag);
         if( indexOfStartTag === -1 || indexOfEndTag === -1 || indexOfStartTag >= indexOfEndTag ){
           // There are not scripts
