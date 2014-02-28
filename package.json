@@ -2,7 +2,7 @@
   "name": "grunt-django-compressor",
   "description": "A Grunt plugin to iterate over every html file and compress javascripts and stylesheets.",
   "version": "0.1.0",
-  "homepage": "https://github.com/cristianrojas/grunt-django-compressor",
+  "homepage": "https://github.com/cristiangrojas/grunt-django-compressor",
   "author": {
     "name": "Cristian Rojas",
     "email": "cristianguillermorojas@gmail.com",
@@ -10,15 +10,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/cristianrojas/grunt-django-compressor.git"
+    "url": "git://github.com/cristiangrojas/grunt-django-compressor.git"
   },
   "bugs": {
-    "url": "https://github.com/cristianrojas/grunt-django-compressor/issues"
+    "url": "https://github.com/cristiangrojas/grunt-django-compressor/issues"
   },
   "licenses": [
     {
       "type": "MIT",
-      "url": "https://github.com/cristianrojas/grunt-django-compressor/blob/master/LICENSE-MIT"
+      "url": "https://github.com/cristiangrojas/grunt-django-compressor/blob/master/LICENSE-MIT"
     }
   ],
   "engines": {
