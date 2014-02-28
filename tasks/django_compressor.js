@@ -65,8 +65,8 @@ module.exports = function(grunt) {
     // Variable to store the scripts
     var scripts;
 
-    htmlFiles.forEach(function(file){
-      var htmlFile = grunt.file.read(file);
+    htmlFiles.forEach(function(htmlFilePath){
+      var htmlFile = grunt.file.read(htmlFilePath);
 
       // Verify if the file has the startTag
       var indexOfStartTag = htmlFile.indexOf(options.startTag);
@@ -107,7 +107,7 @@ module.exports = function(grunt) {
         if( scripts ){
           // extract the filename of the template to create a js file with
           // the same name
-          var destFileName = file.split('/').join('_').replace(/\./g, '').replace('html', '') + '.js',
+          var destFileName = htmlFilePath.split('/').pop().replace('.html', '.js'),
           // destination file path (the same folder as the scripts)
             destFile = scripts[0].substring(0, scripts[0].lastIndexOf('/') + 1) + destFileName,
           // variable to store the file content
@@ -123,7 +123,7 @@ module.exports = function(grunt) {
             // Read file source and write in the variable
             var src = grunt.file.read(filepath);
             if( src ){
-              _fileContent += grunt.file.read(filepath);
+              _fileContent += src;
             }
           });
 
@@ -132,10 +132,54 @@ module.exports = function(grunt) {
           // Print a success message.
           grunt.log.writeln('File "' + destFile + '" created.');
 
-          var minVersionPath = destFile.replace('.js', '.min.js');
-          var minVersion = UglifyJS.minify(destFile);
-          grunt.file.write(minVersionPath, minVersion.code);
-          grunt.log.writeln('File "' + minVersionPath + '" created.');
+//          var minVersionPath = destFile.replace('.js', '.min.js');
+//          var minVersion = UglifyJS.minify(destFile);
+//          grunt.file.write(minVersionPath, minVersion.code);
+//          grunt.log.writeln('File "' + minVersionPath + '" created.');
+
+          var djangoStartTag = '{# SCRIPTS #}';
+          var djangoEndTag = '{# SCRIPTS END #}';
+
+          var htmlFileAlreadyParsed = false;
+          if( htmlFile.indexOf(djangoStartTag) > -1 ) htmlFileAlreadyParsed = true;
+
+          var scriptTag = '<script type="text/javascript" src="'
+            + destFile.replace(options.staticFilesPath, options.staticFilesDjangoPrefix)
+            + '"></script>';
+
+//          console.log(scriptTag);
+
+          var newHtmlFile;
+
+          if( htmlFileAlreadyParsed ){
+            var htmlFileCopy = htmlFile;
+            var indexOfDjangoStartTag = htmlFileCopy.indexOf(djangoStartTag);
+            var indexOfDjangoEndTag = htmlFileCopy.indexOf(djangoEndTag);
+            htmlFileCopy = htmlFileCopy.slice(0, indexOfDjangoStartTag)
+              + '{# SCRIPTS #}'
+              + '{% if DEBUG %}'
+              + htmlFileCopy.substring(indexOfStartTag - 1, indexOfEndTag + options.endTag.length)
+              + '{% else %}'
+              + scriptTag
+              + '{% endif %}'
+              + '{# SCRIPTS END #}'
+              + htmlFileCopy.slice(indexOfDjangoEndTag + djangoEndTag.length, htmlFileCopy.length);
+
+            newHtmlFile = htmlFileCopy;
+          } else {
+            console.log('html file not parsed');
+            newHtmlFile = htmlFile.substr(0, indexOfStartTag - 1)
+              + '{# SCRIPTS #}'
+              + '{% if DEBUG %}'
+              + htmlFile.substr(indexOfStartTag - 1, indexOfEndTag + options.endTag.length)
+              + '{% else %}'
+              + scriptTag
+              + '{% endif %}'
+              + '{# SCRIPTS END #}'
+              + htmlFile.substr(indexOfEndTag + options.endTag.length, htmlFile.length);
+          }
+
+          grunt.file.write(htmlFilePath, newHtmlFile);
         }
       }
     });
