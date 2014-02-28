@@ -29,6 +29,8 @@ module.exports = function(grunt) {
       staticFilesPath: '',
       // Folder where the generated static files should be
       destinationFolder: '',
+      // A list of excluded dirs that shouldn't be scanned
+      excludedDirs: [],
     });
 
     // Don't continue if the staticFilesOption isn't set
@@ -47,13 +49,24 @@ module.exports = function(grunt) {
         for(var i in files){
           if(!files.hasOwnProperty(i)) continue;
           var name = dir+'/'+files[i];
-          if(fs.statSync(name).isDirectory()){
-            // It's a directory
-            getFiles(name);
-          } else {
-            // It's a file, but verify if is an html file
-            if(name.split('.').pop() === 'html'){
-              htmlFiles.push(name);
+
+          // Exclude if name in excluded folders option
+          var thisFolderShouldBeExcluded = false;
+          options.excludedDirs.forEach(function(excludedFileName){
+            if( name.indexOf(excludedFileName) > -1 ){
+              thisFolderShouldBeExcluded = true;
+            }
+          });
+
+          if( !thisFolderShouldBeExcluded ){
+            if(fs.statSync(name).isDirectory()){
+              // It's a directory
+              getFiles(name);
+            } else {
+              // It's a file, but verify if is an html file
+              if(name.split('.').pop() === 'html'){
+                htmlFiles.push(name);
+              }
             }
           }
         }
