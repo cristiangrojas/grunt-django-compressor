@@ -160,9 +160,10 @@ module.exports = function(grunt) {
           var htmlFileAlreadyParsed = false;
           if( htmlFile.indexOf(djangoStartTag) > -1 ) htmlFileAlreadyParsed = true;
 
+          var jsFileVersion = new Date().getTime();
           var scriptTag = '<script type="text/javascript" src="'
             + destFile.replace(options.staticFilesPath, options.staticFilesDjangoPrefix)
-            + '"></script>';
+            + '?version=' + jsFileVersion + '"></script>';
 
           var newHtmlFile;
 
