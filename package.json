@@ -1,7 +1,7 @@
 {
   "name": "grunt-django-compressor",
   "description": "A Grunt plugin to iterate over every html file and compress javascripts and stylesheets.",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "homepage": "https://github.com/cristiangrojas/grunt-django-compressor",
   "author": {
     "name": "Cristian Rojas",

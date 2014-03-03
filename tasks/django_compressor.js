@@ -126,39 +126,34 @@ module.exports = function(grunt) {
           // extract the filename of the template to create a js file with
           // the same name
           var destFileName = htmlFilePath.split('/').pop().replace('.html', '.js'),
-          // destination file path (the same folder as the scripts)
-            destFile = options.destinationFolder + destFileName,
-          // variable to store the file content
-            fileContent = '';
+          // destination file path
+            destFile = options.destinationFolder + destFileName;
 
+          // Warn if any source file doesn't exists
+          // --------------------------------------------------
           scripts.forEach(function(filepath) {
-            // Warn on and remove invalid source files
             if ( !grunt.file.exists(filepath) ){
               grunt.log.warn('Source file "' + filepath + '" not found.');
               return false;
             }
-
-            // Read file source and write in the variable
-            var src = grunt.file.read(filepath);
-            if( src ){
-              fileContent += src;
-            }
           });
 
-          // Write the stored content in the dest file
-          grunt.file.write(destFile, fileContent);
-          // Print a success message.
+          // Compress the scripts and save in a file
+          // ---------------------------------------------------
+          var minifiedJsFile;
+          try {
+            minifiedJsFile = UglifyJS.minify(scripts, {
+              mangle: true,
+              compress: true,
+            });
+          } catch(err) {
+            throw new Error(err);
+          }
+          grunt.file.write(destFile, minifiedJsFile.code);
           grunt.log.writeln('File "' + destFile + '" created.');
 
-          var minVersionPath = destFile.replace('.js', '.min.js');
-          var minVersion = UglifyJS.minify(destFile);
-          grunt.file.write(minVersionPath, minVersion.code);
-          grunt.log.writeln('File "' + minVersionPath + '" created.');
-
-          // TODO fix this hack
-          grunt.file.delete(destFile);
-          grunt.log.writeln('File "' + destFile + '" deleted.');
-
+          // Write the template with the new js file
+          // ---------------------------------------------------
           var djangoStartTag = '{# SCRIPTS #}';
           var djangoEndTag = '{# SCRIPTS END #}';
 
@@ -166,7 +161,7 @@ module.exports = function(grunt) {
           if( htmlFile.indexOf(djangoStartTag) > -1 ) htmlFileAlreadyParsed = true;
 
           var scriptTag = '<script type="text/javascript" src="'
-            + minVersionPath.replace(options.staticFilesPath, options.staticFilesDjangoPrefix)
+            + destFile.replace(options.staticFilesPath, options.staticFilesDjangoPrefix)
             + '"></script>';
 
           var newHtmlFile;

@@ -41,8 +41,8 @@ module.exports = function(grunt) {
         options: {
           separator: ': ',
           punctuation: ' !!!',
-          staticFilesPath: './templates/static_files/',
-          destinationFolder: './templates/static_files/dist/',
+          staticFilesPath: 'templates/static_files/',
+          destinationFolder: 'templates/static_files/dist/',
           excludedDirs: [
             'node_modules/',
           ],
