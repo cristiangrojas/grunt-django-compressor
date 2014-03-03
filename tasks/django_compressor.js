@@ -102,11 +102,30 @@ module.exports = function(grunt) {
             substrEnd = (indexOfEndTag - 1) - substrStart;
           // Store the scripts section in the scripts var
           scripts = htmlFile.substr(substrStart, substrEnd);
+
+
+          // Determine the indentation level by getting it from the first script
+          // tag in the HTML
+          // TODO the following code can be considered as a hack :P
+          var scriptsArr = scripts.split('</script>'),
+            firstScriptInArr = scriptsArr[0].replace(/\n/, ''), // replace new-line chars
+            padding = '';
+
+          for(var i=0; i <= firstScriptInArr.length; i++){
+            var char = firstScriptInArr.charAt(i);
+            if( char == ' ' ){
+              padding += ' ';
+              console.log('padding:' + padding + ':padding');
+            } else {
+              break; // exit from the loop
+            }
+          }
+
+
           // Look for all src="*" parts in the scripts string
           var regexp = /src=".*?"/g;
           // match them and return as an array
           scripts = scripts.match(regexp);
-
           // Create a new array and remove unneeded chars in the script path
           var _scripts = [];
           scripts.forEach(function(script){
@@ -172,33 +191,33 @@ module.exports = function(grunt) {
             var indexOfDjangoEndTag = htmlFile.indexOf(djangoEndTag);
             newHtmlFile = htmlFile.slice(0, indexOfDjangoStartTag)
               + djangoStartTag
-              + grunt.util.linefeed
+              + grunt.util.linefeed + padding
               + '{% if DEBUG %}'
-              + grunt.util.linefeed
+              + grunt.util.linefeed + padding
               + htmlFile.substring(indexOfStartTag, indexOfEndTag + options.endTag.length)
-              + grunt.util.linefeed
+              + grunt.util.linefeed + padding
               + '{% else %}'
-              + grunt.util.linefeed
+              + grunt.util.linefeed + padding
               + scriptTag
-              + grunt.util.linefeed
+              + grunt.util.linefeed + padding
               + '{% endif %}'
-              + grunt.util.linefeed
+              + grunt.util.linefeed + padding
               + djangoEndTag
               + htmlFile.slice(indexOfDjangoEndTag + djangoEndTag.length, htmlFile.length);
           } else {
             newHtmlFile = htmlFile.substring(0, indexOfStartTag)
               + djangoStartTag
-              + grunt.util.linefeed
+              + grunt.util.linefeed + padding
               + '{% if DEBUG %}'
-              + grunt.util.linefeed
+              + grunt.util.linefeed + padding
               + htmlFile.substring(indexOfStartTag, indexOfEndTag + options.endTag.length)
-              + grunt.util.linefeed
+              + grunt.util.linefeed + padding
               + '{% else %}'
-              + grunt.util.linefeed
+              + grunt.util.linefeed + padding
               + scriptTag
-              + grunt.util.linefeed
+              + grunt.util.linefeed + padding
               + '{% endif %}'
-              + grunt.util.linefeed
+              + grunt.util.linefeed + padding
               + djangoEndTag
               + htmlFile.substr(indexOfEndTag + options.endTag.length, htmlFile.length);
           }
