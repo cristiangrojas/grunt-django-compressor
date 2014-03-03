@@ -115,7 +115,6 @@ module.exports = function(grunt) {
             var char = firstScriptInArr.charAt(i);
             if( char == ' ' ){
               padding += ' ';
-              console.log('padding:' + padding + ':padding');
             } else {
               break; // exit from the loop
             }
