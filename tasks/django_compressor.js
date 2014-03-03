@@ -11,8 +11,9 @@
 module.exports = function(grunt) {
 
   var fs = require('fs');
-  var comment = require('./libs/comment');
   var UglifyJS = require('uglify-js');
+  var chalk = require('chalk');
+  var CleanCSS = require('clean-css');
 
   // Please see the Grunt documentation for more information regarding task
   // creation: http://gruntjs.com/creating-tasks
@@ -34,8 +35,8 @@ module.exports = function(grunt) {
     });
 
     // Don't continue if the staticFilesOption isn't set
-    if( options.staticFilesPath === '' ) throw new Error('Please specify the staticFilesPath option.');
-    if( options.destinationFolder === '' ) throw new Error('Please specify the destinationFolder option.');
+    if( options.staticFilesPath === '' ) throw new Error(chalk.underline.red('Please specify the "staticFilesPath" option.'));
+    if( options.destinationFolder === '' ) throw new Error(chalk.underline.red('Please specify the "destinationFolder" option.'));
 
     /*
      * Get html files function
@@ -87,7 +88,7 @@ module.exports = function(grunt) {
       // Verify if the file has the startTag
       var indexOfStartTag = htmlFile.indexOf(options.startTag);
       if( indexOfStartTag > -1 ){
-        grunt.log.writeln(options.startTag + ' found in "' + htmlFilePath + '"');
+        grunt.log.writeln(chalk.yellow(options.startTag) + ' tag was found in "' + chalk.underline.cyan(htmlFilePath) + '"');
 
         // send the indexOfStartTag number to start looking at this point
         var indexOfEndTag = htmlFile.indexOf(options.endTag, indexOfStartTag);
@@ -168,7 +169,7 @@ module.exports = function(grunt) {
             throw new Error(err);
           }
           grunt.file.write(destFile, minifiedJsFile.code);
-          grunt.log.writeln('File "' + destFile + '" created.');
+          grunt.log.writeln('File "' + chalk.underline.cyan(destFile) + '" created.');
 
           // Write the template with the new js file
           // ---------------------------------------------------
