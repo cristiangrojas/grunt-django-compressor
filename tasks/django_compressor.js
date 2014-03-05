@@ -14,6 +14,8 @@ module.exports = function(grunt) {
   var UglifyJS = require('uglify-js');
   var chalk = require('chalk');
   var CleanCSS = require('clean-css');
+  var getHtmlFiles = require('./snippets/get-html-files').getHtmlFiles;
+  var generateMD5fromFile = require('./snippets/md5').generateMD5fromFile;
 
   // Please see the Grunt documentation for more information regarding task
   // creation: http://gruntjs.com/creating-tasks
@@ -38,49 +40,20 @@ module.exports = function(grunt) {
     if( options.staticFilesPath === '' ) throw new Error(chalk.underline.red('Please specify the "staticFilesPath" option.'));
     if( options.destinationFolder === '' ) throw new Error(chalk.underline.red('Please specify the "destinationFolder" option.'));
 
-    /*
-     * Get html files function
-     * -----------------------
-     * */
-    function getHtmlFiles(dir){
-      var htmlFiles = [];
-
-      function getFiles(dir){
-        var files = fs.readdirSync(dir);
-        for(var i in files){
-          if(!files.hasOwnProperty(i)) continue;
-          var name = dir+'/'+files[i];
-
-          // Exclude if name in excluded folders option
-          var thisFolderShouldBeExcluded = false;
-          options.excludedDirs.forEach(function(excludedFileName){
-            if( name.indexOf(excludedFileName) > -1 ){
-              thisFolderShouldBeExcluded = true;
-            }
-          });
-
-          if( !thisFolderShouldBeExcluded ){
-            if(fs.statSync(name).isDirectory()){
-              // It's a directory
-              getFiles(name);
-            } else {
-              // It's a file, but verify if is an html file
-              if(name.split('.').pop() === 'html'){
-                htmlFiles.push(name);
-              }
-            }
-          }
-        }
-      }
-      getFiles(dir);
-      return htmlFiles;
-    }
-
     // Get html files from this folder (where gruntfile lives)
-    var htmlFiles = getHtmlFiles('.');
+    var htmlFiles = getHtmlFiles('.', options.excludedDirs);
 
     // Variable to store the scripts
     var scripts;
+
+    // Store the MD5 versions of the found files inside a json file
+    var versionsJsonFilePath = options.destinationFolder + 'grunt_django_compressor_versions.json',
+      versionsJsonFileContent = {},
+      versionsJsonFileExists = grunt.file.exists(versionsJsonFilePath);
+
+    if( versionsJsonFileExists ){
+      versionsJsonFileContent = grunt.file.readJSON(versionsJsonFilePath);
+    }
 
     htmlFiles.forEach(function(htmlFilePath){
       var htmlFile = grunt.file.read(htmlFilePath);
@@ -95,7 +68,6 @@ module.exports = function(grunt) {
         if( indexOfStartTag === -1 || indexOfEndTag === -1 || indexOfStartTag >= indexOfEndTag ){
           // There are not scripts
           scripts = false;
-          return false;
         } else {
           // The file contains start and end tag
           // Determine where stars and finish the scripts section
@@ -142,89 +114,129 @@ module.exports = function(grunt) {
         }
 
         if( scripts ){
-          // extract the filename of the template to create a js file with
+          // Extract the filename of the template to create a js file with
           // the same name
-          var destFileName = htmlFilePath.split('/').pop().replace('.html', '.js'),
-          // destination file path
+          var htmlFileName = htmlFilePath.split('/').pop(),
+            destFileName = htmlFileName.replace('.html', '.js'),
+            // destination file path
             destFile = options.destinationFolder + destFileName;
 
           // Warn if any source file doesn't exists
           // --------------------------------------------------
-          scripts.forEach(function(filepath) {
+          scripts.every(function(filepath, index, array){
             if ( !grunt.file.exists(filepath) ){
               grunt.log.warn('Source file "' + filepath + '" not found.');
               return false;
             }
           });
 
-          // Compress the scripts and save in a file
-          // ---------------------------------------------------
-          var minifiedJsFile;
-          try {
-            minifiedJsFile = UglifyJS.minify(scripts, {
-              mangle: true,
-              compress: true,
-            });
-          } catch(err) {
-            throw new Error(err);
-          }
-          grunt.file.write(destFile, minifiedJsFile.code);
-          grunt.log.writeln('File "' + chalk.underline.cyan(destFile) + '" created.');
+          // Generate a json file with html file name and scripts with MD5 hex
+          // hash to detect if files changed in the next iteration
+          var atLeastOneFileHasChanged = false;
+          scripts.every(function(filepath, index, array){
+            var MD5forThisFile = generateMD5fromFile(filepath);
 
-          // Write the template with the new js file
-          // ---------------------------------------------------
-          var djangoStartTag = '{# SCRIPTS #}';
-          var djangoEndTag = '{# SCRIPTS END #}';
+            if( !versionsJsonFileExists ){
+              if( !versionsJsonFileContent[htmlFileName] ){
+                versionsJsonFileContent[htmlFileName] = {};
+              }
+              versionsJsonFileContent[htmlFileName][filepath] = MD5forThisFile;
 
-          var htmlFileAlreadyParsed = false;
-          if( htmlFile.indexOf(djangoStartTag) > -1 ) htmlFileAlreadyParsed = true;
+              // If the versions file doesn't exists yet it means that it should
+              // be created and I need to make the atLeastOneFileHasChanged true
+              // to trigger the creation of the compressed static file
+              if( !atLeastOneFileHasChanged ){ // do it only one time
+                atLeastOneFileHasChanged = true;
+              }
+            } else {
+              var previousMD5 = versionsJsonFileContent[htmlFileName][filepath];
+              if( previousMD5 !== MD5forThisFile ){
+                // set this flag to true to compress the statics
+                atLeastOneFileHasChanged = true;
+                // write the new MD5 for this file
+                versionsJsonFileContent[htmlFileName][filepath] = MD5forThisFile;
+                grunt.log.writeln(filepath + ' in ' + htmlFileName + ' has changed.');
+                return false; // exit from the loop
+              }
+            }
+            return true; // to continue with the loop
+          });
 
-          var jsFileVersion = new Date().getTime();
-          var scriptTag = '<script type="text/javascript" src="'
-            + destFile.replace(options.staticFilesPath, options.staticFilesDjangoPrefix)
-            + '?version=' + jsFileVersion + '"></script>';
+          if( atLeastOneFileHasChanged ){
+            // Compress the scripts and save in a file
+            // ---------------------------------------------------
+            var minifiedJsFile;
+            try {
+              minifiedJsFile = UglifyJS.minify(scripts, {
+                mangle: true,
+                compress: true,
+              });
+            } catch(err) {
+              throw new Error(err);
+            }
+            grunt.file.write(destFile, minifiedJsFile.code);
+            grunt.log.writeln('File "' + chalk.underline.cyan(destFile) + '" created.');
 
-          var newHtmlFile;
+            // Write the template with the new js file
+            // ---------------------------------------------------
+            var djangoStartTag = '{# SCRIPTS #}';
+            var djangoEndTag = '{# SCRIPTS END #}';
 
-          if( htmlFileAlreadyParsed ){
-            var indexOfDjangoStartTag = htmlFile.indexOf(djangoStartTag);
-            var indexOfDjangoEndTag = htmlFile.indexOf(djangoEndTag);
-            newHtmlFile = htmlFile.slice(0, indexOfDjangoStartTag)
-              + djangoStartTag
-              + grunt.util.linefeed + padding
-              + '{% if DEBUG %}'
-              + grunt.util.linefeed + padding
-              + htmlFile.substring(indexOfStartTag, indexOfEndTag + options.endTag.length)
-              + grunt.util.linefeed + padding
-              + '{% else %}'
-              + grunt.util.linefeed + padding
-              + scriptTag
-              + grunt.util.linefeed + padding
-              + '{% endif %}'
-              + grunt.util.linefeed + padding
-              + djangoEndTag
-              + htmlFile.slice(indexOfDjangoEndTag + djangoEndTag.length, htmlFile.length);
+            var htmlFileAlreadyParsed = false;
+            if( htmlFile.indexOf(djangoStartTag) > -1 ) htmlFileAlreadyParsed = true;
+
+            var jsFileVersion = new Date().getTime();
+            var scriptTag = '<script type="text/javascript" src="'
+              + destFile.replace(options.staticFilesPath, options.staticFilesDjangoPrefix)
+              + '?version=' + jsFileVersion + '"></script>';
+
+            var newHtmlFile;
+
+            if( htmlFileAlreadyParsed ){
+              var indexOfDjangoStartTag = htmlFile.indexOf(djangoStartTag);
+              var indexOfDjangoEndTag = htmlFile.indexOf(djangoEndTag);
+              newHtmlFile = htmlFile.slice(0, indexOfDjangoStartTag)
+                + djangoStartTag
+                + grunt.util.linefeed + padding
+                + '{% if DEBUG %}'
+                + grunt.util.linefeed + padding
+                + htmlFile.substring(indexOfStartTag, indexOfEndTag + options.endTag.length)
+                + grunt.util.linefeed + padding
+                + '{% else %}'
+                + grunt.util.linefeed + padding
+                + scriptTag
+                + grunt.util.linefeed + padding
+                + '{% endif %}'
+                + grunt.util.linefeed + padding
+                + djangoEndTag
+                + htmlFile.slice(indexOfDjangoEndTag + djangoEndTag.length, htmlFile.length);
+            } else {
+              newHtmlFile = htmlFile.substring(0, indexOfStartTag)
+                + djangoStartTag
+                + grunt.util.linefeed + padding
+                + '{% if DEBUG %}'
+                + grunt.util.linefeed + padding
+                + htmlFile.substring(indexOfStartTag, indexOfEndTag + options.endTag.length)
+                + grunt.util.linefeed + padding
+                + '{% else %}'
+                + grunt.util.linefeed + padding
+                + scriptTag
+                + grunt.util.linefeed + padding
+                + '{% endif %}'
+                + grunt.util.linefeed + padding
+                + djangoEndTag
+                + htmlFile.substr(indexOfEndTag + options.endTag.length, htmlFile.length);
+            }
+
+            grunt.file.write(htmlFilePath, newHtmlFile);
           } else {
-            newHtmlFile = htmlFile.substring(0, indexOfStartTag)
-              + djangoStartTag
-              + grunt.util.linefeed + padding
-              + '{% if DEBUG %}'
-              + grunt.util.linefeed + padding
-              + htmlFile.substring(indexOfStartTag, indexOfEndTag + options.endTag.length)
-              + grunt.util.linefeed + padding
-              + '{% else %}'
-              + grunt.util.linefeed + padding
-              + scriptTag
-              + grunt.util.linefeed + padding
-              + '{% endif %}'
-              + grunt.util.linefeed + padding
-              + djangoEndTag
-              + htmlFile.substr(indexOfEndTag + options.endTag.length, htmlFile.length);
-          }
-
-          grunt.file.write(htmlFilePath, newHtmlFile);
-        }
+            grunt.log.writeln('No files has changed for ' + htmlFileName);
+          } // end if atLeastOneFileHasChanged
+        } // end if scripts
       }
-    });
+    }); // end html files forEach
+
+    grunt.file.write(versionsJsonFilePath, JSON.stringify(versionsJsonFileContent, null, 4));
+    grunt.log.writeln(versionsJsonFilePath + ' successfully created.');
   });
 };
