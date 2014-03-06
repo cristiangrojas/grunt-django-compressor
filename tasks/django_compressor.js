@@ -43,16 +43,22 @@ module.exports = function(grunt) {
     // Get html files from this folder (where gruntfile lives)
     var htmlFiles = getHtmlFiles('.', options.excludedDirs);
 
-    // Variable to store the scripts
-    var scripts;
+    // Variable to store the found files
+    var foundFiles;
 
     // Store the MD5 versions of the found files inside a json file
     var versionsJsonFilePath = options.destinationFolder + 'grunt_django_compressor_versions.json',
-      versionsJsonFileContent = {},
+      versionsJsonFileContent = null,
       versionsJsonFileExists = grunt.file.exists(versionsJsonFilePath);
 
     if( versionsJsonFileExists ){
       versionsJsonFileContent = grunt.file.readJSON(versionsJsonFilePath);
+    } else {
+      // Initialize to have things organized inside the JSON
+      versionsJsonFileContent = {
+        'created': null,
+        'modified': null
+      }
     }
 
     htmlFiles.forEach(function(htmlFilePath){
@@ -66,26 +72,26 @@ module.exports = function(grunt) {
         // send the indexOfStartTag number to start looking at this point
         var indexOfEndTag = htmlFile.indexOf(options.endTag, indexOfStartTag);
         if( indexOfStartTag === -1 || indexOfEndTag === -1 || indexOfStartTag >= indexOfEndTag ){
-          // There are not scripts
-          scripts = false;
+          // There are not js or css files
+          foundFiles = false;
         } else {
           // The file contains start and end tag
           // Determine where stars and finish the scripts section
           var substrStart = indexOfStartTag + options.startTag.length,
             substrEnd = (indexOfEndTag - 1) - substrStart;
           // Store the scripts section in the scripts var
-          scripts = htmlFile.substr(substrStart, substrEnd);
+          foundFiles = htmlFile.substr(substrStart, substrEnd);
 
 
           // Determine the indentation level by getting it from the first script
           // tag in the HTML
           // TODO the following code can be considered as a hack :P
-          var scriptsArr = scripts.split('</script>'),
-            firstScriptInArr = scriptsArr[0].replace(/\n/, ''), // replace new-line chars
+          var foundFilesArr = foundFiles.split('</script>'),
+            firstFileInArr = foundFilesArr[0].replace(/\n/, ''), // replace new-line chars
             padding = '';
 
-          for(var i=0; i <= firstScriptInArr.length; i++){
-            var char = firstScriptInArr.charAt(i);
+          for(var i=0; i <= firstFileInArr.length; i++){
+            var char = firstFileInArr.charAt(i);
             if( char == ' ' ){
               padding += ' ';
             } else {
@@ -97,23 +103,23 @@ module.exports = function(grunt) {
           // Look for all src="*" parts in the scripts string
           var regexp = /src=".*?"/g;
           // match them and return as an array
-          scripts = scripts.match(regexp);
+          foundFiles = foundFiles.match(regexp);
           // Create a new array and remove unneeded chars in the script path
-          var _scripts = [];
-          scripts.forEach(function(script){
+          var tempArr = [];
+          foundFiles.forEach(function(file){
             // TODO: should throw an error if staticFilesDjangoPrefix not set?
-            script = script.replace(/"/g, '')
+            file = file.replace(/"/g, '')
               .replace('src=', '')
               .replace(options.staticFilesDjangoPrefix, '');
 
             // Construct the absolute path
-            script = options.staticFilesPath + script;
-            _scripts.push(script);
+            file = options.staticFilesPath + file;
+            tempArr.push(file);
           });
-          scripts = _scripts;
+          foundFiles = tempArr;
         }
 
-        if( scripts ){
+        if( foundFiles ){
           // Extract the filename of the template to create a js file with
           // the same name
           var htmlFileName = htmlFilePath.split('/').pop(),
@@ -123,24 +129,27 @@ module.exports = function(grunt) {
 
           // Warn if any source file doesn't exists
           // --------------------------------------------------
-          scripts.every(function(filepath, index, array){
+          foundFiles.every(function(filepath, index, array){
             if ( !grunt.file.exists(filepath) ){
               grunt.log.warn('Source file "' + filepath + '" not found.');
-              return false;
+              return false; // exit from the loop
             }
+            return true; // continue with the loop
           });
 
           // Generate a json file with html file name and scripts with MD5 hex
           // hash to detect if files changed in the next iteration
           var atLeastOneFileHasChanged = false;
-          scripts.every(function(filepath, index, array){
+          foundFiles.every(function(filepath, index, array){
             var MD5forThisFile = generateMD5fromFile(filepath);
 
             if( !versionsJsonFileExists ){
-              if( !versionsJsonFileContent[htmlFileName] ){
-                versionsJsonFileContent[htmlFileName] = {};
+              // stamp the created time
+              versionsJsonFileContent['created'] = new Date().getTime();
+              if( !versionsJsonFileContent[htmlFilePath] ){
+                versionsJsonFileContent[htmlFilePath] = {};
               }
-              versionsJsonFileContent[htmlFileName][filepath] = MD5forThisFile;
+              versionsJsonFileContent[htmlFilePath][filepath] = MD5forThisFile;
 
               // If the versions file doesn't exists yet it means that it should
               // be created and I need to make the atLeastOneFileHasChanged true
@@ -149,13 +158,13 @@ module.exports = function(grunt) {
                 atLeastOneFileHasChanged = true;
               }
             } else {
-              var previousMD5 = versionsJsonFileContent[htmlFileName][filepath];
+              var previousMD5 = versionsJsonFileContent[htmlFilePath][filepath];
               if( previousMD5 !== MD5forThisFile ){
                 // set this flag to true to compress the statics
                 atLeastOneFileHasChanged = true;
                 // write the new MD5 for this file
-                versionsJsonFileContent[htmlFileName][filepath] = MD5forThisFile;
-                grunt.log.writeln(filepath + ' in ' + htmlFileName + ' has changed.');
+                versionsJsonFileContent[htmlFilePath][filepath] = MD5forThisFile;
+                grunt.log.writeln(chalk.underline.cyan(filepath) + ' in ' + chalk.underline.cyan(htmlFilePath) + ' has changed.');
                 return false; // exit from the loop
               }
             }
@@ -167,7 +176,7 @@ module.exports = function(grunt) {
             // ---------------------------------------------------
             var minifiedJsFile;
             try {
-              minifiedJsFile = UglifyJS.minify(scripts, {
+              minifiedJsFile = UglifyJS.minify(foundFiles, {
                 mangle: true,
                 compress: true,
               });
@@ -230,13 +239,14 @@ module.exports = function(grunt) {
 
             grunt.file.write(htmlFilePath, newHtmlFile);
           } else {
-            grunt.log.writeln('No files has changed for ' + htmlFileName);
+            grunt.log.writeln('No files has changed for ' + chalk.underline.cyan(htmlFileName));
           } // end if atLeastOneFileHasChanged
         } // end if scripts
       }
     }); // end html files forEach
 
+    versionsJsonFileContent['modified'] = new Date().getTime();
     grunt.file.write(versionsJsonFilePath, JSON.stringify(versionsJsonFileContent, null, 4));
-    grunt.log.writeln(versionsJsonFilePath + ' successfully created.');
+    grunt.log.writeln(chalk.underline.cyan(versionsJsonFilePath) + ' successfully created.');
   });
 };

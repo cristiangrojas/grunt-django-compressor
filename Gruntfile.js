@@ -39,8 +39,6 @@ module.exports = function(grunt) {
       },*/
       custom_options: {
         options: {
-          separator: ': ',
-          punctuation: ' !!!',
           staticFilesPath: 'templates/static_files/',
           destinationFolder: 'templates/static_files/dist/',
           excludedDirs: [
