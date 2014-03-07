@@ -165,7 +165,7 @@ module.exports = function(grunt) {
           var htmlFileName = htmlFilePath.split('/').pop(),
           // TODO verify that all files has the same extension
             foundFilesExtension = foundFiles[0].split('.').pop(),
-            destFileName = htmlFileName.replace('.html', foundFilesExtension),
+            destFileName = htmlFileName.replace('.html', '.' + foundFilesExtension),
           // destination file path
             destFile = options.destinationFolder + destFileName;
 
