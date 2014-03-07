@@ -15,12 +15,13 @@ module.exports = function(grunt) {
   var chalk = require('chalk');
   var CleanCSS = require('clean-css');
   var getHtmlFiles = require('./snippets/get-html-files').getHtmlFiles;
-  var generateMD5fromFile = require('./snippets/md5').generateMD5fromFile;
+  var generateMD5fromString = require('./snippets/md5').generateMD5fromString;
 
   // Please see the Grunt documentation for more information regarding task
   // creation: http://gruntjs.com/creating-tasks
 
   grunt.registerMultiTask('django_compressor', 'A Grunt plugin to iterate over every html file and compress javascripts and stylesheets.', function() {
+
     // Merge task-specific and/or target-specific options with these defaults.
     var options = this.options({
       // Same as the sails linker
@@ -40,11 +41,6 @@ module.exports = function(grunt) {
     if( options.staticFilesPath === '' ) throw new Error(chalk.underline.red('Please specify the "staticFilesPath" option.'));
     if( options.destinationFolder === '' ) throw new Error(chalk.underline.red('Please specify the "destinationFolder" option.'));
 
-    // Get html files from this folder (where gruntfile lives)
-    var htmlFiles = getHtmlFiles('.', options.excludedDirs);
-
-    // Variable to store the found files
-    var foundFiles;
 
     // Store the MD5 versions of the found files inside a json file
     var versionsJsonFilePath = options.destinationFolder + 'grunt_django_compressor_versions.json',
@@ -61,10 +57,33 @@ module.exports = function(grunt) {
       }
     }
 
+
+    // 1st STEP
+    //
+    // Get all HTML files
+    // -------------------------------------------------------------------------
+    var htmlFiles = getHtmlFiles('.', options.excludedDirs);
+
+
+    // 2nd STEP
+    //
+    // Iterate over every HTML file
+    // -------------------------------------------------------------------------
     htmlFiles.forEach(function(htmlFilePath){
+      // Variable to store the found js or css files inside the HTML file
+      var foundFiles;
+
+      // HTML file content
       var htmlFile = grunt.file.read(htmlFilePath);
 
-      // Verify if the file has the startTag
+
+      // 3rd STEP
+      //
+      // Look for the start and end tags inside the html file to determine if
+      // there are js or css files.
+      //
+      // If static files found generate an array with the file paths.
+      // -----------------------------------------------------------------------
       var indexOfStartTag = htmlFile.indexOf(options.startTag);
       if( indexOfStartTag > -1 ){
         grunt.log.writeln(chalk.yellow(options.startTag) + ' tag was found in "' + chalk.underline.cyan(htmlFilePath) + '"');
@@ -81,7 +100,6 @@ module.exports = function(grunt) {
             substrEnd = (indexOfEndTag - 1) - substrStart;
           // Store the scripts section in the scripts var
           foundFiles = htmlFile.substr(substrStart, substrEnd);
-
 
           // Determine the indentation level by getting it from the first script
           // tag in the HTML
@@ -119,14 +137,19 @@ module.exports = function(grunt) {
           foundFiles = tempArr;
         }
 
-        if( foundFiles ){
-          // Extract the filename of the template to create a js file with
-          // the same name
-          var htmlFileName = htmlFilePath.split('/').pop(),
-            destFileName = htmlFileName.replace('.html', '.js'),
-            // destination file path
-            destFile = options.destinationFolder + destFileName;
 
+        // 4th STEP
+        //
+        // Verify if the files exists, warn if not.
+        //
+        // Iterate over files and compress them in one minified file with the
+        // same name as the html file.
+        //
+        // Update the versions JSON file with MD5 codes for each found static
+        // file to determine changes and avoid compressing all files every time
+        // this task is executed.
+        // ---------------------------------------------------------------------
+        if( foundFiles ){
           // Warn if any source file doesn't exists
           // --------------------------------------------------
           foundFiles.every(function(filepath, index, array){
@@ -137,39 +160,65 @@ module.exports = function(grunt) {
             return true; // continue with the loop
           });
 
+          // Extract the filename of the template to create a js file with
+          // the same name
+          var htmlFileName = htmlFilePath.split('/').pop(),
+          // TODO verify that all files has the same extension
+            foundFilesExtension = foundFiles[0].split('.').pop(),
+            destFileName = htmlFileName.replace('.html', foundFilesExtension),
+          // destination file path
+            destFile = options.destinationFolder + destFileName;
+
           // Generate a json file with html file name and scripts with MD5 hex
           // hash to detect if files changed in the next iteration
+
+          // Flag to check if at least one file has changed
           var atLeastOneFileHasChanged = false;
-          foundFiles.every(function(filepath, index, array){
-            var MD5forThisFile = generateMD5fromFile(filepath);
+          // Generate an MD5 for an string with the paths of found files,
+          // this will determine if an static file was added or removed. In any
+          // of that cases it means the compressed file should be created.
+          var MD5forAllFiles = generateMD5fromString(foundFiles.join(';'));
+
+          foundFiles.forEach(function(filepath, index, array){
+            var fileContent = grunt.file.read(filepath);
+            var MD5forThisFile = generateMD5fromString(fileContent);
 
             if( !versionsJsonFileExists ){
               // stamp the created time
               versionsJsonFileContent['created'] = new Date().getTime();
               if( !versionsJsonFileContent[htmlFilePath] ){
                 versionsJsonFileContent[htmlFilePath] = {};
+                versionsJsonFileContent[htmlFilePath][foundFilesExtension] = {};
+                // Append the MD5 version for the found files to look for changes
+                // the next time
+                versionsJsonFileContent[htmlFilePath][foundFilesExtension]['version'] = MD5forAllFiles;
               }
-              versionsJsonFileContent[htmlFilePath][filepath] = MD5forThisFile;
+              versionsJsonFileContent[htmlFilePath][foundFilesExtension][filepath] = MD5forThisFile;
 
               // If the versions file doesn't exists yet it means that it should
               // be created and I need to make the atLeastOneFileHasChanged true
               // to trigger the creation of the compressed static file
-              if( !atLeastOneFileHasChanged ){ // do it only one time
-                atLeastOneFileHasChanged = true;
-              }
+              if( !atLeastOneFileHasChanged ) atLeastOneFileHasChanged = true;
             } else {
-              var previousMD5 = versionsJsonFileContent[htmlFilePath][filepath];
+              var previousMD5 = versionsJsonFileContent[htmlFilePath][foundFilesExtension][filepath];
               if( previousMD5 !== MD5forThisFile ){
                 // set this flag to true to compress the statics
-                atLeastOneFileHasChanged = true;
+                if( !atLeastOneFileHasChanged ) atLeastOneFileHasChanged = true;
                 // write the new MD5 for this file
-                versionsJsonFileContent[htmlFilePath][filepath] = MD5forThisFile;
+                versionsJsonFileContent[htmlFilePath][foundFilesExtension][filepath] = MD5forThisFile;
                 grunt.log.writeln(chalk.underline.cyan(filepath) + ' in ' + chalk.underline.cyan(htmlFilePath) + ' has changed.');
-                return false; // exit from the loop
               }
             }
-            return true; // to continue with the loop
           });
+
+          // Check if the "all files" MD5 has changed, when true trigger the
+          // compression of the statics. It means something added or removed
+          var previousMD5forAllFiles = versionsJsonFileContent[htmlFilePath][foundFilesExtension]['version'];
+          if( MD5forAllFiles !== previousMD5forAllFiles ){
+            versionsJsonFileContent[htmlFilePath][foundFilesExtension]['version'] = MD5forAllFiles;
+            if( !atLeastOneFileHasChanged ) atLeastOneFileHasChanged = true;
+            grunt.log.writeln('Looks like you added new ' + chalk.cyan(foundFilesExtension) + ' files to the ' + chalk.underline.cyan(htmlFilePath) + ' file.');
+          }
 
           if( atLeastOneFileHasChanged ){
             // Compress the scripts and save in a file
@@ -247,6 +296,6 @@ module.exports = function(grunt) {
 
     versionsJsonFileContent['modified'] = new Date().getTime();
     grunt.file.write(versionsJsonFilePath, JSON.stringify(versionsJsonFileContent, null, 4));
-    grunt.log.writeln(chalk.underline.cyan(versionsJsonFilePath) + ' successfully created.');
+    grunt.log.writeln(chalk.underline.cyan(versionsJsonFilePath) + ' successfully updated.');
   });
 };

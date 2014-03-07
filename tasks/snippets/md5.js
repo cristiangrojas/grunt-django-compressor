@@ -7,9 +7,7 @@
  * */
 
 var crypto = require('crypto');
-var grunt = require('grunt');
 
-exports.generateMD5fromFile = function(filepath){
-  var fileContent = grunt.file.read(filepath);
-  return crypto.createHash('md5').update(fileContent, 'utf8').digest('hex');
+exports.generateMD5fromString = function(s){
+  return crypto.createHash('md5').update(s, 'utf8').digest('hex');
 };
