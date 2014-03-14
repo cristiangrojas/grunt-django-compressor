@@ -37,8 +37,30 @@ module.exports = function(grunt) {
           'tmp/default_options': ['test/fixtures/testing', 'test/fixtures/123'],
         },
       },*/
-      custom_options: {
+      /*custom_options: {
         options: {
+          staticFilesPath: 'templates/static_files/',
+          destinationFolder: 'templates/static_files/dist/',
+          excludedDirs: [
+            'node_modules/',
+          ],
+        },
+      },*/
+      css: {
+        options: {
+          startTag: '<!--STYLES-->',
+          endTag: '<!--STYLES END-->',
+          staticFilesPath: 'templates/static_files/',
+          destinationFolder: 'templates/static_files/dist/',
+          excludedDirs: [
+            'node_modules/',
+          ],
+        },
+      },
+      js: {
+        options: {
+          startTag: '<!--SCRIPTS-->',
+          endTag: '<!--SCRIPTS END-->',
           staticFilesPath: 'templates/static_files/',
           destinationFolder: 'templates/static_files/dist/',
           excludedDirs: [

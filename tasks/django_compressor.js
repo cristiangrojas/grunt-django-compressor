@@ -13,7 +13,7 @@ module.exports = function(grunt) {
   var fs = require('fs');
   var UglifyJS = require('uglify-js');
   var chalk = require('chalk');
-  var CleanCSS = require('clean-css');
+  var minifyCSS = require('./snippets/minify-css').minifyCSS;
   var getHtmlFiles = require('./snippets/get-html-files').getHtmlFiles;
   var generateMD5fromString = require('./snippets/md5').generateMD5fromString;
 
@@ -118,8 +118,13 @@ module.exports = function(grunt) {
           }
 
 
-          // Look for all src="*" parts in the scripts string
-          var regexp = /src=".*?"/g;
+          // Look for all src="*" or href="*" parts in the script or css string
+          var regexp;
+          if( foundFiles.indexOf('css') > -1 ){
+            regexp = /href=".*?"/g;
+          } else if( foundFiles.indexOf('js') > -1 ){
+            regexp = /src=".*?"/g;
+          }
           // match them and return as an array
           foundFiles = foundFiles.match(regexp);
           // Create a new array and remove unneeded chars in the script path
@@ -127,7 +132,7 @@ module.exports = function(grunt) {
           foundFiles.forEach(function(file){
             // TODO: should throw an error if staticFilesDjangoPrefix not set?
             file = file.replace(/"/g, '')
-              .replace('src=', '')
+              .replace('src=', '').replace('href=', '')
               .replace(options.staticFilesDjangoPrefix, '');
 
             // Construct the absolute path
@@ -200,7 +205,21 @@ module.exports = function(grunt) {
               // to trigger the creation of the compressed static file
               if( !atLeastOneFileHasChanged ) atLeastOneFileHasChanged = true;
             } else {
-              var previousMD5 = versionsJsonFileContent[htmlFilePath][foundFilesExtension][filepath];
+              var previousMD5;
+
+              try {
+                previousMD5 = versionsJsonFileContent[htmlFilePath][foundFilesExtension][filepath];
+              } catch (err){
+                // TODO the following lines looks dirty
+                if( !versionsJsonFileContent[htmlFilePath] ){
+                  versionsJsonFileContent[htmlFilePath] = {};
+                }
+                if( !versionsJsonFileContent[htmlFilePath][foundFilesExtension] ){
+                  versionsJsonFileContent[htmlFilePath][foundFilesExtension] = {};
+                }
+                previousMD5 = null;
+              }
+
               if( previousMD5 !== MD5forThisFile ){
                 // set this flag to true to compress the statics
                 if( !atLeastOneFileHasChanged ) atLeastOneFileHasChanged = true;
@@ -221,32 +240,58 @@ module.exports = function(grunt) {
           }
 
           if( atLeastOneFileHasChanged ){
-            // Compress the scripts and save in a file
-            // ---------------------------------------------------
-            var minifiedJsFile;
-            try {
-              minifiedJsFile = UglifyJS.minify(foundFiles, {
-                mangle: true,
-                compress: true,
-              });
-            } catch(err) {
-              throw new Error(err);
+            // Compress the files and save them in a compressed file
+            // -----------------------------------------------------------------
+            if( foundFilesExtension == 'css' ){
+              // The following code is basically a copy of the code used in the cssmin task
+              // https://github.com/gruntjs/grunt-contrib-cssmin/blob/master/tasks/cssmin.js
+              var minifiedCSSFile = foundFiles.map(function(filepath){
+                // TODO enable options
+                var options = {};
+                var src = grunt.file.read(filepath);
+                return minifyCSS(src, options);
+              }).join('');
+
+              if( minifiedCSSFile.length === 0 ){
+                return grunt.log.warn('Destination not written because minified CSS was empty');
+              }
+              grunt.file.write(destFile, minifiedCSSFile);
+
+            } else if( foundFilesExtension == 'js' ){
+              var minifiedJsFile;
+              try {
+                minifiedJsFile = UglifyJS.minify(foundFiles, {
+                  mangle: true,
+                  compress: true,
+                });
+              } catch(err) {
+                throw new Error(err);
+              }
+              grunt.file.write(destFile, minifiedJsFile.code);
             }
-            grunt.file.write(destFile, minifiedJsFile.code);
+
             grunt.log.writeln('File "' + chalk.underline.cyan(destFile) + '" created.');
 
             // Write the template with the new js file
-            // ---------------------------------------------------
-            var djangoStartTag = '{# SCRIPTS #}';
-            var djangoEndTag = '{# SCRIPTS END #}';
+            // -----------------------------------------------------------------
+            var djangoStartTag = '{# GRUNT_DJANGO_COMPRESSOR ' + foundFilesExtension.toUpperCase() + ' #}';
+            var djangoEndTag = '{# GRUNT_DJANGO_COMPRESSOR ' + foundFilesExtension.toUpperCase() + ' END #}';
 
             var htmlFileAlreadyParsed = false;
             if( htmlFile.indexOf(djangoStartTag) > -1 ) htmlFileAlreadyParsed = true;
 
-            var jsFileVersion = new Date().getTime();
-            var scriptTag = '<script type="text/javascript" src="'
+            var fileVersion = new Date().getTime();
+            var newHtmlTag = '';
+
+            if( foundFilesExtension == 'css' ){
+              newHtmlTag = '<link rel="stylesheet" type="text/css" href="'
+                + destFile.replace(options.staticFilesPath, options.staticFilesDjangoPrefix)
+                + '?version=' + fileVersion + '">';
+            } else if( foundFilesExtension == 'js' ){
+              newHtmlTag = '<script type="text/javascript" src="'
               + destFile.replace(options.staticFilesPath, options.staticFilesDjangoPrefix)
-              + '?version=' + jsFileVersion + '"></script>';
+              + '?version=' + fileVersion + '"></script>';
+            }
 
             var newHtmlFile;
 
@@ -262,7 +307,7 @@ module.exports = function(grunt) {
                 + grunt.util.linefeed + padding
                 + '{% else %}'
                 + grunt.util.linefeed + padding
-                + scriptTag
+                + newHtmlTag
                 + grunt.util.linefeed + padding
                 + '{% endif %}'
                 + grunt.util.linefeed + padding
@@ -278,7 +323,7 @@ module.exports = function(grunt) {
                 + grunt.util.linefeed + padding
                 + '{% else %}'
                 + grunt.util.linefeed + padding
-                + scriptTag
+                + newHtmlTag
                 + grunt.util.linefeed + padding
                 + '{% endif %}'
                 + grunt.util.linefeed + padding
