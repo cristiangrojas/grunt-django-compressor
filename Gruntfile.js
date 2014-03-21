@@ -30,17 +30,23 @@ module.exports = function(grunt) {
 
     // Configuration to be run (and then tested).
     django_compressor: {
-      /*default_options: {
+      css: {
         options: {
+          startTag: '<!--STYLES-->',
+          endTag: '<!--STYLES END-->',
+          staticFilesPath: 'templates/static_files/',
+          destinationFolder: 'templates/static_files/dist/',
+          excludedDirs: [
+            'node_modules/',
+          ],
         },
-        files: {
-          'tmp/default_options': ['test/fixtures/testing', 'test/fixtures/123'],
-        },
-      },*/
-      custom_options: {
+      },
+      js: {
         options: {
-          staticFilesPath: './templates/',
-          destinationFolder: './templates/dist/',
+          startTag: '<!--SCRIPTS-->',
+          endTag: '<!--SCRIPTS END-->',
+          staticFilesPath: 'templates/static_files/',
+          destinationFolder: 'templates/static_files/dist/',
           excludedDirs: [
             'node_modules/',
           ],
