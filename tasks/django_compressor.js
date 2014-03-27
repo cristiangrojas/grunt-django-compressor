@@ -250,7 +250,7 @@ module.exports = function(grunt) {
               }).join('');
 
               var minifiedCSSFile = minifyCSS(data, {
-                root: path.join(process.cwd(), 'templates/static_files/dist')
+                root: path.join(process.cwd(), options.destinationFolder)
               });
 
               grunt.file.write(destFile, minifiedCSSFile);
