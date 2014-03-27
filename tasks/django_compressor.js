@@ -340,6 +340,5 @@ module.exports = function(grunt) {
     versionsJsonFileContent['modified'] = new Date().getTime();
     grunt.file.write(versionsJsonFilePath, JSON.stringify(versionsJsonFileContent, null, 4));
     grunt.log.writeln(chalk.underline.cyan(versionsJsonFilePath) + ' successfully updated.');
-    grunt.file.delete(versionsJsonFilePath);
   });
 };
