@@ -57,7 +57,7 @@ module.exports = function(grunt) {
           ],
         },
       },
-      js: {
+      /*js: {
         options: {
           startTag: '<!--SCRIPTS-->',
           endTag: '<!--SCRIPTS END-->',
@@ -67,7 +67,7 @@ module.exports = function(grunt) {
             'node_modules/',
           ],
         },
-      },
+      },*/
     },
 
     // Unit tests.

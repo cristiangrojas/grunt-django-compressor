@@ -13,6 +13,7 @@ module.exports = function(grunt) {
   var fs = require('fs');
   var UglifyJS = require('uglify-js');
   var chalk = require('chalk');
+  var path = require('path');
   var minifyCSS = require('./snippets/minify-css').minifyCSS;
   var getHtmlFiles = require('./snippets/get-html-files').getHtmlFiles;
   var generateMD5fromString = require('./snippets/md5').generateMD5fromString;
@@ -243,18 +244,15 @@ module.exports = function(grunt) {
             // Compress the files and save them in a compressed file
             // -----------------------------------------------------------------
             if( foundFilesExtension == 'css' ){
-              // The following code is basically a copy of the code used in the cssmin task
-              // https://github.com/gruntjs/grunt-contrib-cssmin/blob/master/tasks/cssmin.js
-              var minifiedCSSFile = foundFiles.map(function(filepath){
-                // TODO enable options
-                var options = {};
-                var src = grunt.file.read(filepath);
-                return minifyCSS(src, options);
+
+              var data = foundFiles.map(function(filepath){
+                return '@import url(' + filepath.replace(options.staticFilesPath, '../') + ');';
               }).join('');
 
-              if( minifiedCSSFile.length === 0 ){
-                return grunt.log.warn('Destination not written because minified CSS was empty');
-              }
+              var minifiedCSSFile = minifyCSS(data, {
+                root: path.join(process.cwd(), 'templates/static_files/dist')
+              });
+
               grunt.file.write(destFile, minifiedCSSFile);
 
             } else if( foundFilesExtension == 'js' ){
@@ -342,5 +340,6 @@ module.exports = function(grunt) {
     versionsJsonFileContent['modified'] = new Date().getTime();
     grunt.file.write(versionsJsonFilePath, JSON.stringify(versionsJsonFileContent, null, 4));
     grunt.log.writeln(chalk.underline.cyan(versionsJsonFilePath) + ' successfully updated.');
+    grunt.file.delete(versionsJsonFilePath);
   });
 };
