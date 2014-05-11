@@ -1,5 +1,6 @@
 # grunt-django-compressor
 
+[![Build Status](https://travis-ci.org/PabloVallejo/grunt-django-compressor.svg?branch=travis)](https://travis-ci.org/PabloVallejo/grunt-django-compressor)
 > A Grunt plugin to iterate over every html file and compress JavaScripts and StyleSheets.
 
 ## Getting Started
