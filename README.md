@@ -1,6 +1,6 @@
 # grunt-django-compressor
 
-> A Grunt plugin to iterate over every html file and compress javascripts and stylesheets.
+> A Grunt plugin to iterate over every html file and compress JavaScripts and StyleSheets.
 
 ## Getting Started
 
