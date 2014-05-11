@@ -21,7 +21,7 @@ module.exports = function(grunt) {
   // Please see the Grunt documentation for more information regarding task
   // creation: http://gruntjs.com/creating-tasks
 
-  grunt.registerMultiTask('django_compressor', 'A Grunt plugin to iterate over every html file and compress javascripts and stylesheets.', function() {
+  grunt.registerMultiTask('django_compressor', 'A Grunt plugin to iterate over every HTML file and compress javascripts and stylesheets.', function() {
 
     // Merge task-specific and/or target-specific options with these defaults.
     var options = this.options({
@@ -39,9 +39,11 @@ module.exports = function(grunt) {
     });
 
     // Don't continue if the staticFilesOption isn't set
-    if( options.staticFilesPath === '' ) throw new Error(chalk.underline.red('Please specify the "staticFilesPath" option.'));
-    if( options.destinationFolder === '' ) throw new Error(chalk.underline.red('Please specify the "destinationFolder" option.'));
+    if( options.staticFilesPath === '' ) 
+      throw new Error(chalk.underline.red('Please specify the "staticFilesPath" option.'));
 
+    if( options.destinationFolder === '' ) 
+      throw new Error(chalk.underline.red('Please specify the "destinationFolder" option.'));
 
     // Store the MD5 versions of the found files inside a json file
     var versionsJsonFilePath = options.destinationFolder + 'grunt_django_compressor_versions.json',
@@ -71,7 +73,7 @@ module.exports = function(grunt) {
     // Iterate over every HTML file
     // -------------------------------------------------------------------------
     htmlFiles.forEach(function(htmlFilePath){
-      // Variable to store the found js or css files inside the HTML file
+      // Variable to store the found JS or CSS files inside the HTML file
       var foundFiles;
 
       // HTML file content
@@ -80,8 +82,8 @@ module.exports = function(grunt) {
 
       // 3rd STEP
       //
-      // Look for the start and end tags inside the html file to determine if
-      // there are js or css files.
+      // Look for the start and end tags inside the HTML file to determine if
+      // there are JS or CSS files.
       //
       // If static files found generate an array with the file paths.
       // -----------------------------------------------------------------------
@@ -92,7 +94,7 @@ module.exports = function(grunt) {
         // send the indexOfStartTag number to start looking at this point
         var indexOfEndTag = htmlFile.indexOf(options.endTag, indexOfStartTag);
         if( indexOfStartTag === -1 || indexOfEndTag === -1 || indexOfStartTag >= indexOfEndTag ){
-          // There are not js or css files
+          // There are not JS or CSS files
           foundFiles = false;
         } else {
           // The file contains start and end tag
@@ -103,15 +105,15 @@ module.exports = function(grunt) {
           foundFiles = htmlFile.substr(substrStart, substrEnd);
 
           // Determine the indentation level by getting it from the first script
-          // tag in the HTML
+          // tag in the HTML.
           // TODO the following code can be considered as a hack :P
           var foundFilesArr = foundFiles.split('</script>'),
             firstFileInArr = foundFilesArr[0].replace(/\n/, ''), // replace new-line chars
             padding = '';
 
           for(var i=0; i <= firstFileInArr.length; i++){
-            var char = firstFileInArr.charAt(i);
-            if( char == ' ' ){
+            var ch = firstFileInArr.charAt(i);
+            if( ch == ' ' ){
               padding += ' ';
             } else {
               break; // exit from the loop
@@ -119,7 +121,7 @@ module.exports = function(grunt) {
           }
 
 
-          // Look for all src="*" or href="*" parts in the script or css string
+          // Look for all src="*" or href="*" parts in the script or CSS string
           var regexp;
           if( foundFiles.indexOf('css') > -1 ){
             regexp = /href=".*?"/g;
@@ -149,7 +151,7 @@ module.exports = function(grunt) {
         // Verify if the files exists, warn if not.
         //
         // Iterate over files and compress them in one minified file with the
-        // same name as the html file.
+        // same name as the HTML file.
         //
         // Update the versions JSON file with MD5 codes for each found static
         // file to determine changes and avoid compressing all files every time
@@ -166,7 +168,7 @@ module.exports = function(grunt) {
             return true; // continue with the loop
           });
 
-          // Extract the filename of the template to create a js file with
+          // Extract the filename of the template to create a JS file with
           // the same name
           var htmlFileName = htmlFilePath.split('/').pop(),
           // TODO verify that all files has the same extension
@@ -175,7 +177,7 @@ module.exports = function(grunt) {
           // destination file path
             destFile = options.destinationFolder + destFileName;
 
-          // Generate a json file with html file name and scripts with MD5 hex
+          // Generate a json file with HTML file name and scripts with MD5 hex
           // hash to detect if files changed in the next iteration
 
           // Flag to check if at least one file has changed
@@ -270,7 +272,7 @@ module.exports = function(grunt) {
 
             grunt.log.writeln('File "' + chalk.underline.cyan(destFile) + '" created.');
 
-            // Write the template with the new js file
+            // Write the template with the new JS file
             // -----------------------------------------------------------------
             var djangoStartTag = '{# GRUNT_DJANGO_COMPRESSOR ' + foundFilesExtension.toUpperCase() + ' #}';
             var djangoEndTag = '{# GRUNT_DJANGO_COMPRESSOR ' + foundFilesExtension.toUpperCase() + ' END #}';
@@ -335,7 +337,7 @@ module.exports = function(grunt) {
           } // end if atLeastOneFileHasChanged
         } // end if scripts
       }
-    }); // end html files forEach
+    }); // end HTML files forEach
 
     versionsJsonFileContent['modified'] = new Date().getTime();
     grunt.file.write(versionsJsonFilePath, JSON.stringify(versionsJsonFileContent, null, 4));
