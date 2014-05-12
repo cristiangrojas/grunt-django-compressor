@@ -1,6 +1,4 @@
 {
-  "curly": true,
-  "eqeqeq": true,
   "immed": true,
   "latedef": true,
   "newcap": true,
@@ -9,5 +7,12 @@
   "undef": true,
   "boss": true,
   "eqnull": true,
-  "node": true
+  "node": true,
+  "asi"      : true,
+  "browser"  : true,
+  "debug"    : true,
+  "devel"    : true,
+  "laxbreak" : true,
+  "latedef"  : true,
+  "funcscope": true
 }
