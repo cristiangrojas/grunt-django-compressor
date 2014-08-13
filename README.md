@@ -91,6 +91,7 @@ In lieu of a formal styleguide, take care to maintain the existing coding style.
 date: Aug 13, 2014
 ##### Changes:
 * Fixed error with double django-application name in file names
+
 #### v0.2.13
 date: Aug 13, 2014
 ##### Changes:
