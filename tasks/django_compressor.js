@@ -168,14 +168,27 @@ module.exports = function(grunt) {
             return true; // continue with the loop
           });
 
-          // Extract the filename of the template to create a JS file with
-          // the same name
+          // Generate a unique file for this file
+          // The theory:
+          // The template name is base.html inside your django project called "myproject"
+          // so the path for this file will be: ./myproject/templates/base.html
+          // The filename should be: 'myproject.base.js' in order to respect the
+          // following structure: {appname}.[subfolders-if-exists].{template-name}.{extension}
           var htmlFileName = htmlFilePath.split('/').pop(),
-          // TODO verify that all files has the same extension
-            foundFilesExtension = foundFiles[0].split('.').pop(),
-            destFileName = htmlFileName.replace('.html', '.' + foundFilesExtension),
-          // destination file path
-            destFile = options.destinationFolder + destFileName;
+            // TODO verify if all files has the same extension
+            foundFilesExtension = foundFiles[0].split('.').pop();
+
+          var destFileName = htmlFilePath
+            .substr(1)// remove the first character from the file path (a dot ".")
+            .replace(/templates/g, '') // this removes the "templates" string and generates double slashes "//"
+            .replace(/\/\//g, '/') // this replaces the double slashes by only one
+            .replace(/\//g, '.') // and replace all slashes with "."
+            .replace('.html', '.' + foundFilesExtension); // finally put the right extension to the file (.js or .css)
+
+          if( destFileName.charAt(0) == '.' ) destFileName = destFileName.substr(1); // remove the first dot if exist
+
+          var destFile = options.destinationFolder + destFileName; // destination file full path
+
 
           // Generate a json file with HTML file name and scripts with MD5 hex
           // hash to detect if files changed in the next iteration
@@ -262,7 +275,7 @@ module.exports = function(grunt) {
               try {
                 minifiedJsFile = UglifyJS.minify(foundFiles, {
                   mangle: true,
-                  compress: true,
+                  compress: true
                 });
               } catch(err) {
                 throw new Error(err);

@@ -30,7 +30,7 @@ module.exports = function(grunt) {
 
     // Configuration to be run (and then tested).
     django_compressor: {
-      css: {
+      /*css: {
         options: {
           startTag: '<!--STYLES-->',
           endTag: '<!--STYLES END-->',
@@ -40,8 +40,8 @@ module.exports = function(grunt) {
             'node_modules/',
           ],
         },
-      },
-      /*js: {
+      },*/
+      js: {
         options: {
           startTag: '<!--SCRIPTS-->',
           endTag: '<!--SCRIPTS END-->',
@@ -51,7 +51,7 @@ module.exports = function(grunt) {
             'node_modules/',
           ],
         },
-      },*/
+      },
     },
 
     // Unit tests.
