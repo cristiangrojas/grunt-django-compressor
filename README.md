@@ -87,6 +87,10 @@ grunt.initConfig({
 In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Lint and test your code using [Grunt](http://gruntjs.com/).
 
 ## Release History
+#### v0.2.14
+date: Aug 13, 2014
+##### Changes:
+* Fixed error with double django-application name in file names
 #### v0.2.13
 date: Aug 13, 2014
 ##### Changes:

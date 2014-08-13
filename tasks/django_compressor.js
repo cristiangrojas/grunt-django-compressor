@@ -170,10 +170,11 @@ module.exports = function(grunt) {
 
           // Generate a unique file for this file
           // The theory:
-          // The template name is base.html inside your django project called "myproject"
-          // so the path for this file will be: ./myproject/templates/base.html
-          // The filename should be: 'myproject.base.js' in order to respect the
-          // following structure: {appname}.[subfolders-if-exists].{template-name}.{extension}
+          // The template name is "contract_form.html" inside a django application in your project
+          // called "my_django_application" so the path for this file will be:
+          // ./my_django_application/templates/my_django_application/contract_form.html
+          // The filename should be: 'my_django_application.contract_form.js' in order to follow this
+          // structure: {appname}.[subfolders-excluding-redundant-application-name].{template-name}.{extension}
           var htmlFileName = htmlFilePath.split('/').pop(),
             // TODO verify if all files has the same extension
             foundFilesExtension = foundFiles[0].split('.').pop();
@@ -186,6 +187,18 @@ module.exports = function(grunt) {
             .replace('.html', '.' + foundFilesExtension); // finally put the right extension to the file (.js or .css)
 
           if( destFileName.charAt(0) == '.' ) destFileName = destFileName.substr(1); // remove the first dot if exist
+
+          // Remove repeated application name
+          // at this point we have something like:
+          // my_django_application.my_django_application.contract_form.html
+          // Noticed the duplicated application name?
+
+          // first get the app name
+          var djangoAppName = destFileName.split('.')[0];
+
+          // Check if the app name is duplicated, if so remove the first occurrence and the new first dot "."
+          if( destFileName.replace(djangoAppName, '').indexOf(djangoAppName) > -1 )
+            destFileName = destFileName.replace(djangoAppName, '').substr(1);
 
           var destFile = options.destinationFolder + destFileName; // destination file full path
 
