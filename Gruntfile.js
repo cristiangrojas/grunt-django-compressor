@@ -45,7 +45,9 @@ module.exports = function(grunt) {
         options: {
           startTag: '<!--SCRIPTS-->',
           endTag: '<!--SCRIPTS END-->',
+          // TODO look for statics inside all django applications folders
           staticFilesPath: 'templates/static_files/',
+          // TODO default to staticFilesPath + 'dist/'
           destinationFolder: 'templates/static_files/dist/',
           excludedDirs: [
             'node_modules/',

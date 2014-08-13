@@ -25,61 +25,111 @@ In your project's Gruntfile, add a section named `django_compressor` to the data
 
 ```js
 grunt.initConfig({
-  django_compressor: {
-    options: {
-      // Task-specific options go here.
+    django_compressor: {
+        js: {
+            my_app_javascript: {
+                startTag: '<!--SCRIPTS-->',
+                endTag: '<!--SCRIPTS END-->',
+                staticFilesPath: 'my_django_applications/static/',
+                destinationFolder: 'my_django_applications/static/dist/',
+                excludedDirs: [
+                    'node_modules/',
+                ],
+            },
+        },
     },
-    your_target: {
-      // Target-specific file lists and/or options go here.
-    },
-  },
 });
 ```
 
 ### Options
 
-#### options.separator
+#### startTag
 Type: `String`
-Default value: `',  '`
+Default value: `<!--SCRIPTS-->`
 
-A string value that is used to do something with whatever.
+The start tag is an HTML comment to determine where starts your javascript or css importation inside an HTML template of your django project.
 
-#### options.punctuation
+#### endTag
 Type: `String`
-Default value: `'.'`
+Default value: `<!--SCRIPTS END-->`
 
-A string value that is used to do something else with whatever else.
+The start tag is an HTML comment to determine where starts your javascript or css importation inside an HTML template of your django project.
+
+The `startTag` and `endTag` tags inside your template should looks something like:
+
+```html
+...
+
+<!--SCRIPTS-->
+<script src="{{ STATIC_URL }}javascript/libs/jquery/jquery-1.8.3.min.js"></script>
+<script src="{{ STATIC_URL }}javascript/libs/jquery-ui/jquery-ui.min.js"></script>
+...
+<!--SCRIPTS END-->
+
+...
+```
+
+#### staticFilesPath
+Type: `String`
+Default value: `''`
+
+The path where your django static files lives.
+
+This plugin currently works for the traditional django application structure: a folder called "static" inside your main application folder (where the settings.py file lives), i.e.: if your project name is "my_project" your django main application will have the same name, so the static files path will be `my_project/my_project/static/`
+
+#### destinationFolder
+Type: `String`
+Default value: `[]`
+
+The path where the compressed statics will be
+
+#### excludedDirs
+Type: `Array`
+Default value: `''`
+
+An array containing folder names that should be excluded when searching HTML files inside your django project, good examples of folders you should exclude are `node_modules`, `bower_components` and folders like them.
 
 ### Usage Examples
 
-#### Default Options
-In this example, the default options are used to do something with whatever. So if the `testing` file has the content `Testing` and the `123` file had the content `1 2 3`, the generated result would be `Testing, 1 2 3.`
+#### Custom Options
+For this example let's suppose we have a Django project called **"superheroes_store"** and the structure should looks like the following:
 
-```js
-grunt.initConfig({
-  django_compressor: {
-    options: {},
-    files: {
-      'dest/default_options': ['src/testing', 'src/123'],
-    },
-  },
-});
+```
+superheroes_store/
+├── manage.py
+├── Gruntfile.js
+├── package.json
+├── node_modules
+│   └── ...
+└── superheroes_store
+    ├── __init__.py
+    ├── settings.py
+    ├── static
+    │   ├── fonts
+    │   ├── img
+    │   ├── js
+    │   └── stylesheets
+    ├── templates
+    │   └── base.html
+    ├── urls.py
+    └── wsgi.py
 ```
 
-#### Custom Options
-In this example, custom options are used to do something else with whatever else. So if the `testing` file has the content `Testing` and the `123` file had the content `1 2 3`, the generated result in this case would be `Testing: 1 2 3 !!!`
+Based on this structure our gruntfile should be:
 
 ```js
 grunt.initConfig({
-  django_compressor: {
-    options: {
-      separator: ': ',
-      punctuation: ' !!!',
+    django_compressor: {
+        superheroes_store_javascript: {
+            startTag: '<!--SCRIPTS-->',
+            endTag: '<!--SCRIPTS END-->',
+            staticFilesPath: 'superheroes_store/static/',
+            destinationFolder: 'superheroes_store/static/dist/',
+            excludedDirs: [
+                'node_modules/',
+            ],
+        }
     },
-    files: {
-      'dest/default_options': ['src/testing', 'src/123'],
-    },
-  },
 });
 ```
 
