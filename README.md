@@ -87,4 +87,7 @@ grunt.initConfig({
 In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Lint and test your code using [Grunt](http://gruntjs.com/).
 
 ## Release History
-_(Nothing yet)_
+#### v0.2.13
+date: Aug 13, 2014
+##### Changes:
+* Generating unique file names based in the path of the file. Ex: `./my_django_app/templates/base.html` will result in a file called `my_django_app.base.js`
