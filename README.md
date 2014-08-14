@@ -150,6 +150,11 @@ In lieu of a formal styleguide, take care to maintain the existing coding style.
 
 ## Release History
 
+#### v0.2.2
+date: Aug 14, 2014
+##### Changes:
+* Fixed an error with the sourceMap in json format
+
 #### v0.2.18
 date: Aug 14, 2014
 ##### Changes:

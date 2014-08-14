@@ -334,7 +334,7 @@ module.exports = function(grunt) {
                       mapCopy.sources[index] = parts.join('/');
                     });
 
-                    // TODO documentar y hacer update de la versión
+                    mapCopy = JSON.stringify(mapCopy); // to string again
 
                     grunt.file.write(sourceMapFilePath, mapCopy);
                   }
