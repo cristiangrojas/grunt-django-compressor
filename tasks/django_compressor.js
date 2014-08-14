@@ -285,15 +285,27 @@ module.exports = function(grunt) {
 
             } else if( foundFilesExtension == 'js' ){
               var minifiedJsFile;
+
+              var sourceMapFilePath = destFile + '.map';
+
+              // Calculate the source root
+              // Source root should be the relative path from where the dist file lives
+              // (the destinationFolder option) to the folder where the Gruntfile.js lives.
+              var sourceRoot = path.relative(options.destinationFolder, '');
+
               try {
                 minifiedJsFile = UglifyJS.minify(foundFiles, {
                   mangle: true,
-                  compress: true
+                  compress: true,
+                  outSourceMap: sourceMapFilePath.split('/').pop(), // just the filename
+                  sourceRoot: sourceRoot
                 });
               } catch(err) {
                 throw new Error(err);
               }
+
               grunt.file.write(destFile, minifiedJsFile.code);
+              grunt.file.write(sourceMapFilePath, minifiedJsFile.map);
             }
 
             grunt.log.writeln('File "' + chalk.underline.cyan(destFile) + '" created.');
