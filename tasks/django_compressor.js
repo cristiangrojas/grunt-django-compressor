@@ -11,12 +11,13 @@
 module.exports = function(grunt) {
 
   var fs = require('fs');
-  var UglifyJS = require('uglify-js');
   var chalk = require('chalk');
+  var _ = require('underscore');
   var path = require('path');
   var minifyCSS = require('./snippets/minify-css').minifyCSS;
   var getHtmlFiles = require('./snippets/get-html-files').getHtmlFiles;
   var generateMD5fromString = require('./snippets/md5').generateMD5fromString;
+  var UglifyTheJS = require('./snippets/uglify-js.js').UglifyTheJS;
 
   // Please see the Grunt documentation for more information regarding task
   // creation: http://gruntjs.com/creating-tasks
@@ -36,6 +37,12 @@ module.exports = function(grunt) {
       destinationFolder: '',
       // A list of excluded dirs that shouldn't be scanned
       excludedDirs: [],
+      // Should the django_compressor generates javascript source maps?
+      generateJsSourceMaps: false,
+      // If static files in production lives inside a amazon S3 bucket
+      // the bucket name should be provided in order to generate a source map
+      // with the right path
+      amazonS3BucketName: ''
     });
 
     // Don't continue if the staticFilesOption isn't set
@@ -291,28 +298,53 @@ module.exports = function(grunt) {
             } else if( foundFilesExtension == 'js' ){
               var minifiedJsFile;
 
-              var sourceMapFilePath = destFile + '.map';
+              // Options to pass to the UglifyJS.minify
+              var UglifyJSOptions = {
+                mangle: true,
+                compress: true
+              };
 
-              // Calculate the source root
-              // Source root should be the relative path from where the dist file lives
-              // (the destinationFolder option) to the folder where the Gruntfile.js lives.
-              var sourceRoot = path.relative(options.destinationFolder, '');
+              if( options.generateJsSourceMaps ){
+                var sourceMapFilePath = destFile + '.map';
 
-              try {
-                minifiedJsFile = UglifyJS.minify(foundFiles, {
-                  mangle: true,
-                  compress: true,
+                // Calculate the source root
+                // Source root should be the relative path from where the dist file lives
+                // (the destinationFolder option) to the folder where the Gruntfile.js lives.
+                var sourceRoot = path.relative(options.destinationFolder, '');
+
+                _.extend(UglifyJSOptions, {
                   outSourceMap: sourceMapFilePath.split('/').pop(), // just the filename
                   sourceRoot: sourceRoot
                 });
-              } catch(err) {
-                throw new Error(err);
+
+                UglifyTheJS(foundFiles, UglifyJSOptions, function(minifiedJsFile){
+                  fileVersion = generateMD5fromString(minifiedJsFile.code);
+                  grunt.file.write(destFile, minifiedJsFile.code);
+
+                  if( options.amazonS3BucketName == ''){
+                    grunt.file.write(sourceMapFilePath, minifiedJsFile.map);
+                  } else {
+                    var mapCopy = minifiedJsFile.map;
+
+                    mapCopy = JSON.parse(mapCopy); // because minifiedJsFile.map is a string
+
+                    mapCopy.sources.forEach(function(element, index, array){
+                      var parts = element.split('/');
+                      parts[0] = options.amazonS3BucketName;
+                      mapCopy.sources[index] = parts.join('/');
+                    });
+
+                    // TODO documentar y hacer update de la versión
+
+                    grunt.file.write(sourceMapFilePath, mapCopy);
+                  }
+                });
+              } else {
+                UglifyTheJS(foundFiles, UglifyJSOptions, function(minifiedJsFile){
+                  fileVersion = generateMD5fromString(minifiedJsFile.code);
+                  grunt.file.write(destFile, minifiedJsFile.code);
+                });
               }
-
-              fileVersion = generateMD5fromString(minifiedJsFile.code);
-
-              grunt.file.write(destFile, minifiedJsFile.code);
-              grunt.file.write(sourceMapFilePath, minifiedJsFile.map);
             }
 
             grunt.log.writeln('File "' + chalk.underline.cyan(destFile) + '" created.');

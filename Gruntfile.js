@@ -50,10 +50,12 @@ module.exports = function(grunt) {
           // TODO default to staticFilesPath + 'dist/'
           destinationFolder: 'templates/static_files/dist/',
           excludedDirs: [
-            'node_modules/',
+            'node_modules/'
           ],
-        },
-      },
+          generateJsSourceMaps: true,
+          amazonS3BucketName: 'segdig1'
+        }
+      }
     },
 
     // Unit tests.

@@ -89,6 +89,18 @@ Default value: `''`
 
 An array containing folder names that should be excluded when searching HTML files inside your django project, good examples of folders you should exclude are `node_modules`, `bower_components` and folders like them.
 
+#### generateJsSourceMaps
+Type: `Boolean`
+Default value: `true`
+
+Set to true if you want to generate source maps for your compiled js files. Source map files will have exact the same name as the javascript file with the .map extension. Will be also in the same folder (options.destinationFolder).
+
+#### amazonS3BucketName
+Type: `String`
+Default value: `''`
+
+If in a production environment your application uses an Amazon S3 bucket to store staticfiles provide the bucket name here, will be used to generate the right path names in the source map file.
+
 ### Usage Examples
 
 #### Custom Options
@@ -137,6 +149,11 @@ grunt.initConfig({
 In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Lint and test your code using [Grunt](http://gruntjs.com/).
 
 ## Release History
+
+#### v0.2.18
+date: Aug 14, 2014
+##### Changes:
+* Added two new options: generateJsSourceMaps & amazonS3BucketName. Ability to decide if the plugin should or not generate js source maps. Ability to provide Amazon S3 bucket name if the app uses this service in a production environment.
 
 #### v0.2.17
 date: Aug 14, 2014
