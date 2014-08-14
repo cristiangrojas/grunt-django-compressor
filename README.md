@@ -139,7 +139,7 @@ In lieu of a formal styleguide, take care to maintain the existing coding style.
 ## Release History
 
 #### v0.2.16
-date: Aug 13, 2014
+date: Aug 14, 2014
 ##### Changes:
 * Implemented source maps for javascript minified files to be able to debug in modern browsers
 
