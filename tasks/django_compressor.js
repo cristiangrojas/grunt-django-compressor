@@ -42,7 +42,7 @@ module.exports = function(grunt) {
       // If static files in production lives inside a amazon S3 bucket
       // the bucket name should be provided in order to generate a source map
       // with the right path
-      amazonS3BucketName: ''
+      amazonS3BucketURL: ''
     });
 
     // Don't continue if the staticFilesOption isn't set
@@ -321,7 +321,7 @@ module.exports = function(grunt) {
                   fileVersion = generateMD5fromString(minifiedJsFile.code);
                   grunt.file.write(destFile, minifiedJsFile.code);
 
-                  if( options.amazonS3BucketName == ''){
+                  if( options.amazonS3BucketURL == ''){
                     grunt.file.write(sourceMapFilePath, minifiedJsFile.map);
                   } else {
                     var mapCopy = minifiedJsFile.map;
@@ -330,9 +330,12 @@ module.exports = function(grunt) {
 
                     mapCopy.sources.forEach(function(element, index, array){
                       var parts = element.split('/');
-                      parts[0] = options.amazonS3BucketName;
+                      parts.shift(); // remove the app name
                       mapCopy.sources[index] = parts.join('/');
                     });
+
+                    // Set url as source root
+                    mapCopy.sourceRoot = options.amazonS3BucketURL;
 
                     mapCopy = JSON.stringify(mapCopy); // to string again
 

@@ -95,11 +95,11 @@ Default value: `true`
 
 Set to true if you want to generate source maps for your compiled js files. Source map files will have exact the same name as the javascript file with the .map extension. Will be also in the same folder (options.destinationFolder).
 
-#### amazonS3BucketName
+#### amazonS3BucketURL
 Type: `String`
 Default value: `''`
 
-If in a production environment your application uses an Amazon S3 bucket to store staticfiles provide the bucket name here, will be used to generate the right path names in the source map file.
+If in a production environment your application uses an Amazon S3 bucket to store staticfiles provide the bucket url here, will be used to generate the right path names in the source map file.
 
 ### Usage Examples
 
@@ -150,7 +150,7 @@ In lieu of a formal styleguide, take care to maintain the existing coding style.
 
 ## Release History
 
-#### v0.2.2
+#### v0.2.21
 date: Aug 14, 2014
 ##### Changes:
 * Fixed an error with the sourceMap in json format
@@ -158,7 +158,7 @@ date: Aug 14, 2014
 #### v0.2.18
 date: Aug 14, 2014
 ##### Changes:
-* Added two new options: generateJsSourceMaps & amazonS3BucketName. Ability to decide if the plugin should or not generate js source maps. Ability to provide Amazon S3 bucket name if the app uses this service in a production environment.
+* Added two new options: generateJsSourceMaps & amazonS3BucketURL. Ability to decide if the plugin should or not generate js source maps. Ability to provide Amazon S3 bucket name if the app uses this service in a production environment.
 
 #### v0.2.17
 date: Aug 14, 2014

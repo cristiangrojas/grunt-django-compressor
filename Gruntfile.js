@@ -53,7 +53,7 @@ module.exports = function(grunt) {
             'node_modules/'
           ],
           generateJsSourceMaps: true,
-          amazonS3BucketName: 'segdig1'
+          amazonS3BucketURL: ''
         }
       }
     },
