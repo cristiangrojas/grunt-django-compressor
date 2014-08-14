@@ -138,6 +138,11 @@ In lieu of a formal styleguide, take care to maintain the existing coding style.
 
 ## Release History
 
+#### v0.2.17
+date: Aug 14, 2014
+##### Changes:
+* Replaced cache version from a datetime to a MD5 (unique for each file) to prevent commits with large amount of changes when updating this plugin
+
 #### v0.2.16
 date: Aug 14, 2014
 ##### Changes:

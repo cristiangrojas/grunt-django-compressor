@@ -269,6 +269,9 @@ module.exports = function(grunt) {
           }
 
           if( atLeastOneFileHasChanged ){
+
+            var fileVersion = ''; // this will be filled with an MD5 depending of the compressed file contents
+
             // Compress the files and save them in a compressed file
             // -----------------------------------------------------------------
             if( foundFilesExtension == 'css' ){
@@ -280,6 +283,8 @@ module.exports = function(grunt) {
               var minifiedCSSFile = minifyCSS(data, {
                 root: path.join(process.cwd(), options.destinationFolder)
               });
+
+              fileVersion = generateMD5fromString(minifiedCSSFile);
 
               grunt.file.write(destFile, minifiedCSSFile);
 
@@ -304,6 +309,8 @@ module.exports = function(grunt) {
                 throw new Error(err);
               }
 
+              fileVersion = generateMD5fromString(minifiedJsFile.code);
+
               grunt.file.write(destFile, minifiedJsFile.code);
               grunt.file.write(sourceMapFilePath, minifiedJsFile.map);
             }
@@ -318,7 +325,6 @@ module.exports = function(grunt) {
             var htmlFileAlreadyParsed = false;
             if( htmlFile.indexOf(djangoStartTag) > -1 ) htmlFileAlreadyParsed = true;
 
-            var fileVersion = new Date().getTime();
             var newHtmlTag = '';
 
             if( foundFilesExtension == 'css' ){
