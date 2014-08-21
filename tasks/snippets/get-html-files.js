@@ -11,11 +11,12 @@
 
 var fs = require('fs');
 
-exports.getHtmlFiles = function(directory, excludedDirs){
+exports.getHtmlFilesAndStaticFolders = function(directory, excludedDirs){
   excludedDirs = excludedDirs || [];
 
   // Variable to store the encountered HTML files
   var htmlFiles = [];
+  var staticFolders = [];
 
   // Function to get files of a directory
   function getFiles(directory){
@@ -23,6 +24,11 @@ exports.getHtmlFiles = function(directory, excludedDirs){
     for(var i in files){
       if(!files.hasOwnProperty(i)) continue;
       var name = directory+'/'+files[i];
+
+      // Identify if this folder is a static folder of the Django project
+      if( name.split('/').pop() == 'static' ){
+        staticFolders.push(name);
+      }
 
       // Exclude if name in excluded folders option
       var thisFolderShouldBeExcluded = false;
@@ -45,6 +51,11 @@ exports.getHtmlFiles = function(directory, excludedDirs){
       }
     }
   }
+
   getFiles(directory);
-  return htmlFiles;
+
+  return {
+    htmlFiles: htmlFiles,
+    staticFolders: staticFolders
+  };
 };

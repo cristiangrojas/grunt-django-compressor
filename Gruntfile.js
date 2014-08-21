@@ -30,23 +30,23 @@ module.exports = function(grunt) {
 
     // Configuration to be run (and then tested).
     django_compressor: {
-      /*css: {
+      css: {
         options: {
           startTag: '<!--STYLES-->',
           endTag: '<!--STYLES END-->',
           staticFilesPath: 'templates/static_files/',
           destinationFolder: 'templates/static_files/dist/',
           excludedDirs: [
-            'node_modules/',
-          ],
-        },
-      },*/
-      js: {
+            'node_modules/'
+          ]
+        }
+      },
+      /*js: {
         options: {
           startTag: '<!--SCRIPTS-->',
           endTag: '<!--SCRIPTS END-->',
           // TODO look for statics inside all django applications folders
-          staticFilesPath: 'templates/static_files/',
+          staticFilesPath: 'templates/segurosdigitales/static/',
           // TODO default to staticFilesPath + 'dist/'
           destinationFolder: 'templates/static_files/dist/',
           excludedDirs: [
@@ -55,7 +55,7 @@ module.exports = function(grunt) {
           generateJsSourceMaps: true,
           amazonS3BucketURL: ''
         }
-      }
+      }*/
     },
 
     // Unit tests.

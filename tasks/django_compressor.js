@@ -15,9 +15,10 @@ module.exports = function(grunt) {
   var _ = require('underscore');
   var path = require('path');
   var minifyCSS = require('./snippets/minify-css').minifyCSS;
-  var getHtmlFiles = require('./snippets/get-html-files').getHtmlFiles;
+  var getHtmlFilesAndStaticFolders = require('./snippets/get-html-files').getHtmlFilesAndStaticFolders;
   var generateMD5fromString = require('./snippets/md5').generateMD5fromString;
   var UglifyTheJS = require('./snippets/uglify-js.js').UglifyTheJS;
+  var cssReplaceUrls = require('./snippets/css-replace-urls').cssReplaceUrls;
 
   // Please see the Grunt documentation for more information regarding task
   // creation: http://gruntjs.com/creating-tasks
@@ -29,7 +30,6 @@ module.exports = function(grunt) {
       // Same as the sails linker
       startTag: '<!--SCRIPTS-->',
       endTag: '<!--SCRIPTS END-->',
-      staticFilesDjangoPrefix: '{{ STATIC_URL }}',
       // The path to the static files
       // typically something like: /<django_app_name>/static/
       staticFilesPath: '',
@@ -46,11 +46,12 @@ module.exports = function(grunt) {
     });
 
     // Don't continue if the staticFilesOption isn't set
-    if( options.staticFilesPath === '' ) 
-      throw new Error(chalk.underline.red('Please specify the "staticFilesPath" option.'));
+    // TODO these options now aren't required
+//    if( options.staticFilesPath === '' )
+//      throw new Error(chalk.underline.red('Please specify the "staticFilesPath" option.'));
 
-    if( options.destinationFolder === '' ) 
-      throw new Error(chalk.underline.red('Please specify the "destinationFolder" option.'));
+//    if( options.destinationFolder === '' )
+//      throw new Error(chalk.underline.red('Please specify the "destinationFolder" option.'));
 
     // Store the MD5 versions of the found files inside a json file
     var versionsJsonFilePath = options.destinationFolder + 'grunt_django_compressor_versions.json',
@@ -70,9 +71,11 @@ module.exports = function(grunt) {
 
     // 1st STEP
     //
-    // Get all HTML files
+    // Get all HTML files and static folders paths
     // -------------------------------------------------------------------------
-    var htmlFiles = getHtmlFiles('.', options.excludedDirs);
+    var htmlFilesAndStaticFolders = getHtmlFilesAndStaticFolders('.', options.excludedDirs);
+    var htmlFiles = htmlFilesAndStaticFolders.htmlFiles;
+    var staticFolders = htmlFilesAndStaticFolders.staticFolders;
 
 
     // 2nd STEP
@@ -113,7 +116,6 @@ module.exports = function(grunt) {
 
           // Determine the indentation level by getting it from the first script
           // tag in the HTML.
-          // TODO the following code can be considered as a hack :P
           var foundFilesArr = foundFiles.split('</script>'),
             firstFileInArr = foundFilesArr[0].replace(/\n/, ''), // replace new-line chars
             padding = '';
@@ -137,18 +139,39 @@ module.exports = function(grunt) {
           }
           // match them and return as an array
           foundFiles = foundFiles.match(regexp);
+
           // Create a new array and remove unneeded chars in the script path
           var tempArr = [];
-          foundFiles.forEach(function(file){
-            // TODO: should throw an error if staticFilesDjangoPrefix not set?
-            file = file.replace(/"/g, '')
-              .replace('src=', '').replace('href=', '')
-              .replace(options.staticFilesDjangoPrefix, '');
+          // To identify if this template uses the {% static %} template tag
+          // if not it means it uses the {{ STATIC_URL }} variable
+          var usesStaticTemplateTag = false;
 
-            // Construct the absolute path
-            file = options.staticFilesPath + file;
-            tempArr.push(file);
+          foundFiles.forEach(function(filePath){
+            filePath = filePath.replace(/["']/g, '')
+              .replace('src=', '').replace('href=', '');
+
+            // At this point we have the path with the {{ STATIC_URL }} or the {% static %}
+            var filePathWithoutSpaces = filePath.replace(/ /g, '').toLowerCase();
+            if( filePathWithoutSpaces.indexOf('{%static') > -1 ){
+              filePath = filePathWithoutSpaces.replace(/[\{\}%]/g, '').replace(/static/, '');
+              if( usesStaticTemplateTag === false ) usesStaticTemplateTag = true;
+            } else if( filePathWithoutSpaces.indexOf('{{static_url}}') > -1 ) { // lower cased because filePathWithoutSpaces is lower cased too
+              filePath = filePathWithoutSpaces.replace(/{{static_url}}/, '');
+            }
+
+            // Check where is this file by looking for it inside every
+            // found static folders.
+            for(var i=0; i<=staticFolders.length; i++){
+              var _filePath = path.join(staticFolders[i], filePath);
+              if( grunt.file.exists(_filePath) ){
+                filePath = _filePath;
+                break; // exit from the loop
+              }
+            }
+
+            tempArr.push(filePath);
           });
+
           foundFiles = tempArr;
         }
 
@@ -175,7 +198,7 @@ module.exports = function(grunt) {
             return true; // continue with the loop
           });
 
-          // Generate a unique file for this file
+          // Generate a unique name for this file
           // The theory:
           // The template name is "contract_form.html" inside a django application in your project
           // called "my_django_application" so the path for this file will be:
@@ -207,7 +230,22 @@ module.exports = function(grunt) {
           if( destFileName.replace(djangoAppName, '').indexOf(djangoAppName) > -1 )
             destFileName = destFileName.replace(djangoAppName, '').substr(1);
 
-          var destFile = options.destinationFolder + destFileName; // destination file full path
+          // Get the Django project name
+          // -----------------------------------------------------------------------------
+          // This script considers that you have created a Django project with the command
+          // "django-admin startproject mysite" which creates a project and an application
+          // with the same name.
+          //
+          // I also assume that the Gruntfile.js file lives inside the project directory
+          // i.e. /mysite/Gruntfile.js and not /mysite/mysite/Gruntfile.js or another path
+
+          var djangoProjectName = process.cwd().split('/').pop(), djangoMainAppName = djangoProjectName;
+          // The django main app static files path is where main static files lives
+          var djangoMainAppStaticPath = path.join(djangoMainAppName, '/static');
+          // The folder where the compressed files will be
+          var staticDestinationFolder = path.join(djangoMainAppStaticPath + '/dist');
+          // destination file full path
+          var destFile = path.join(staticDestinationFolder, destFileName);
 
 
           // Generate a json file with HTML file name and scripts with MD5 hex
@@ -283,13 +321,52 @@ module.exports = function(grunt) {
             // -----------------------------------------------------------------
             if( foundFilesExtension == 'css' ){
 
-              var data = foundFiles.map(function(filepath){
-                return '@import url(' + filepath.replace(options.staticFilesPath, '../') + ');';
+              var data = foundFiles.map(function(filePath){
+                // IMPORTANT!
+                // KEEP IN MIND THAT YOU'RE GOING TO SEND THESE FILES TO PRODUCTION
+                //
+                // Calculating the relative path to the css files is easy:
+                // Supposing you're importing various files from various Django applications
+                // inside your project you should import them relatively to the /dist/ folder
+                // (where the minified files will be)
+                //
+                // So if you /dist/ folder is something like:
+                // ./django_main_app/static/dist/
+                // Your dist file in production will be something like:
+                // ./generated/dist/
+                // The relative path to a file in another django application like:
+                // ./generated/another_django_app/css/whatever.css
+                // Should be:
+                // ../another_django_app/css/whatever.css
+                //
+                // BUT...
+                // If the file is in your main application static folder the relative
+                // path to a file like:
+                // django_main_app/static/css/whatever.css
+                // Should be:
+                // ../css/whatever.css (relative to the /dist/ folder)
+                var relativeFilePath;
+                // If the path contains main app name it means that the file lives inside the
+                // static folder of the project's main app (with the same name as the project).
+                if( filePath.indexOf(djangoMainAppName) > -1 ){
+                  relativeFilePath = path.relative(staticDestinationFolder, filePath);
+                } else {
+                  relativeFilePath = path.join(
+                    path.relative(staticDestinationFolder, ''),
+                    filePath
+                  );
+                }
+                return '@import url(' + relativeFilePath + ');';
               }).join('');
 
               var minifiedCSSFile = minifyCSS(data, {
-                root: path.join(process.cwd(), options.destinationFolder)
+                root: path.join(process.cwd(), staticDestinationFolder)
               });
+
+              // The cssReplaceUrls function does the magic by replacing the broken
+              // urls caused because the /generated/ folder structure is different
+              // than the django project structure
+              minifiedCSSFile = cssReplaceUrls(minifiedCSSFile);
 
               fileVersion = generateMD5fromString(minifiedCSSFile);
 
@@ -309,8 +386,8 @@ module.exports = function(grunt) {
 
                 // Calculate the source root
                 // Source root should be the relative path from where the dist file lives
-                // (the destinationFolder option) to the folder where the Gruntfile.js lives.
-                var sourceRoot = path.relative(options.destinationFolder, '');
+                // to the folder where the Gruntfile.js lives.
+                var sourceRoot = path.relative(staticDestinationFolder, '');
 
                 _.extend(UglifyJSOptions, {
                   outSourceMap: sourceMapFilePath.split('/').pop(), // just the filename
@@ -353,7 +430,7 @@ module.exports = function(grunt) {
             grunt.log.writeln('File "' + chalk.underline.cyan(destFile) + '" created.');
 
             // Write the template with the new JS file
-            // -----------------------------------------------------------------
+            // -----------------------------------------------------------------------------
             var djangoStartTag = '{# GRUNT_DJANGO_COMPRESSOR ' + foundFilesExtension.toUpperCase() + ' #}';
             var djangoEndTag = '{# GRUNT_DJANGO_COMPRESSOR ' + foundFilesExtension.toUpperCase() + ' END #}';
 
@@ -362,13 +439,25 @@ module.exports = function(grunt) {
 
             var newHtmlTag = '';
 
+            // The destFile looks something like:
+            // django_main_app/static/dist/whatever.js
+            // And should be something like:
+            // {% static 'dist/whatever.js' %}
+            // TODO should raise an error if "static" string is not found in destFile?
+            var filePathForTemplate = destFile.split('static').pop().substr(1);
+            if( usesStaticTemplateTag ){
+              filePathForTemplate = '{% static \'' + filePathForTemplate + '\' %}';
+            } else {
+              filePathForTemplate = '{{ STATIC_URL }}' + filePathForTemplate;
+            }
+
             if( foundFilesExtension == 'css' ){
               newHtmlTag = '<link rel="stylesheet" type="text/css" href="'
-                + destFile.replace(options.staticFilesPath, options.staticFilesDjangoPrefix)
+                + filePathForTemplate
                 + '?version=' + fileVersion + '">';
             } else if( foundFilesExtension == 'js' ){
               newHtmlTag = '<script type="text/javascript" src="'
-              + destFile.replace(options.staticFilesPath, options.staticFilesDjangoPrefix)
+              + filePathForTemplate
               + '?version=' + fileVersion + '"></script>';
             }
 
@@ -420,6 +509,8 @@ module.exports = function(grunt) {
 
     versionsJsonFileContent['modified'] = new Date().getTime();
     grunt.file.write(versionsJsonFilePath, JSON.stringify(versionsJsonFileContent, null, 4));
+    // TODO remove this line before submitting
+    grunt.file.delete(versionsJsonFilePath);
     grunt.log.writeln(chalk.underline.cyan(versionsJsonFilePath) + ' successfully updated.');
   });
 };

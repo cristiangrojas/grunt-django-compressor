@@ -3,4 +3,11 @@ npm-debug.log
 tmp
 .idea/
 html_files/
-templates/
+# The folders that I use to test the plugin in development
+grunt-django-compressor/
+grdj_app_1/
+grdj_app_2/
+grdj_app_3/
+grdj_app_4/
+bower.json
+.bowerrc
