@@ -23,35 +23,20 @@ module.exports = function(grunt) {
   // Please see the Grunt documentation for more information regarding task
   // creation: http://gruntjs.com/creating-tasks
 
-  grunt.registerMultiTask('django_compressor', 'A Grunt plugin to iterate over every HTML file and compress javascripts and stylesheets.', function() {
+  grunt.registerMultiTask('django_compressor',
+    'A Grunt plugin to iterate over every HTML file and compress javascripts and stylesheets.',
+    function(){
 
     // Merge task-specific and/or target-specific options with these defaults.
     var options = this.options({
       // Same as the sails linker
       startTag: '<!--SCRIPTS-->',
       endTag: '<!--SCRIPTS END-->',
-      // The path to the static files
-      // typically something like: /<django_app_name>/static/
-      staticFilesPath: '',
-      // Folder where the generated static files should be
-      destinationFolder: '',
       // A list of excluded dirs that shouldn't be scanned
       excludedDirs: [],
       // Should the django_compressor generates javascript source maps?
-      generateJsSourceMaps: false,
-      // If static files in production lives inside a amazon S3 bucket
-      // the bucket name should be provided in order to generate a source map
-      // with the right path
-      amazonS3BucketURL: ''
+      generateJsSourceMaps: false
     });
-
-    // Don't continue if the staticFilesOption isn't set
-    // TODO these options now aren't required
-//    if( options.staticFilesPath === '' )
-//      throw new Error(chalk.underline.red('Please specify the "staticFilesPath" option.'));
-
-//    if( options.destinationFolder === '' )
-//      throw new Error(chalk.underline.red('Please specify the "destinationFolder" option.'));
 
     // Store the MD5 versions of the found files inside a json file
     var versionsJsonFilePath = options.destinationFolder + 'grunt_django_compressor_versions.json',
@@ -230,6 +215,7 @@ module.exports = function(grunt) {
           if( destFileName.replace(djangoAppName, '').indexOf(djangoAppName) > -1 )
             destFileName = destFileName.replace(djangoAppName, '').substr(1);
 
+
           // Get the Django project name
           // -----------------------------------------------------------------------------
           // This script considers that you have created a Django project with the command
@@ -238,7 +224,6 @@ module.exports = function(grunt) {
           //
           // I also assume that the Gruntfile.js file lives inside the project directory
           // i.e. /mysite/Gruntfile.js and not /mysite/mysite/Gruntfile.js or another path
-
           var djangoProjectName = process.cwd().split('/').pop(), djangoMainAppName = djangoProjectName;
           // The django main app static files path is where main static files lives
           var djangoMainAppStaticPath = path.join(djangoMainAppName, '/static');
@@ -299,7 +284,12 @@ module.exports = function(grunt) {
                 if( !atLeastOneFileHasChanged ) atLeastOneFileHasChanged = true;
                 // write the new MD5 for this file
                 versionsJsonFileContent[htmlFilePath][foundFilesExtension][filepath] = MD5forThisFile;
-                grunt.log.writeln(chalk.underline.cyan(filepath) + ' in ' + chalk.underline.cyan(htmlFilePath) + ' has changed.');
+                grunt.log.writeln(
+                    chalk.underline.cyan(filepath) +
+                    ' in ' +
+                    chalk.underline.cyan(htmlFilePath) +
+                    ' has changed.'
+                );
               }
             }
           });
@@ -310,7 +300,13 @@ module.exports = function(grunt) {
           if( MD5forAllFiles !== previousMD5forAllFiles ){
             versionsJsonFileContent[htmlFilePath][foundFilesExtension]['version'] = MD5forAllFiles;
             if( !atLeastOneFileHasChanged ) atLeastOneFileHasChanged = true;
-            grunt.log.writeln('Looks like you added new ' + chalk.cyan(foundFilesExtension) + ' files to the ' + chalk.underline.cyan(htmlFilePath) + ' file.');
+            grunt.log.writeln(
+                'Looks like you added new ' +
+                chalk.cyan(foundFilesExtension) +
+                ' files to the ' +
+                chalk.underline.cyan(htmlFilePath) +
+                ' file.'
+            );
           }
 
           if( atLeastOneFileHasChanged ){
@@ -398,26 +394,28 @@ module.exports = function(grunt) {
                   fileVersion = generateMD5fromString(minifiedJsFile.code);
                   grunt.file.write(destFile, minifiedJsFile.code);
 
-                  if( options.amazonS3BucketURL == ''){
-                    grunt.file.write(sourceMapFilePath, minifiedJsFile.map);
-                  } else {
-                    var mapCopy = minifiedJsFile.map;
+                  var mapCopy = minifiedJsFile.map;
 
-                    mapCopy = JSON.parse(mapCopy); // because minifiedJsFile.map is a string
+                  mapCopy = JSON.parse(mapCopy); // because minifiedJsFile.map is a string
 
-                    mapCopy.sources.forEach(function(element, index, array){
-                      var parts = element.split('/');
-                      parts.shift(); // remove the app name
-                      mapCopy.sources[index] = parts.join('/');
-                    });
+                  mapCopy.sources.forEach(function(source, index, array){
+                    // Source is something like:
+                    // django_main_app/static/bower_components/underscore/underscore.js
+                    // and should be something like:
+                    // /bower_components/underscore/underscore.js
+                    // so with the sourceRoot option will be:
+                    // ../bower_components/underscore/underscore.js
+                    mapCopy.sources[index] = source.split('static').pop();
+                  });
 
-                    // Set url as source root
-                    mapCopy.sourceRoot = options.amazonS3BucketURL;
+                  // Source root should be always ../, the reason for that is the folder structure
+                  // in the /generated/ folder. The source map will be in the /dist/ folder and to
+                  // go back to the /generated/ folder you should do a ../
+                  mapCopy.sourceRoot = '../';
 
-                    mapCopy = JSON.stringify(mapCopy); // to string again
+                  mapCopy = JSON.stringify(mapCopy); // to string again
 
-                    grunt.file.write(sourceMapFilePath, mapCopy);
-                  }
+                  grunt.file.write(sourceMapFilePath, mapCopy);
                 });
               } else {
                 UglifyTheJS(foundFiles, UglifyJSOptions, function(minifiedJsFile){
@@ -509,8 +507,6 @@ module.exports = function(grunt) {
 
     versionsJsonFileContent['modified'] = new Date().getTime();
     grunt.file.write(versionsJsonFilePath, JSON.stringify(versionsJsonFileContent, null, 4));
-    // TODO remove this line before submitting
-    grunt.file.delete(versionsJsonFilePath);
     grunt.log.writeln(chalk.underline.cyan(versionsJsonFilePath) + ' successfully updated.');
   });
 };

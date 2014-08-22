@@ -41,6 +41,46 @@ grunt.initConfig({
 });
 ```
 
+### Important notes
+
+#### Sample django project
+
+There is a Django project I've created for you to see the `grunt-django-compressor` working and I named it [superheroes_store](https://github.com/cristiangrojas/superheroes_store), it's basically a super simple application which has a tipically Django structure.
+
+You can clone it in your local machine and do some experiments with the plugin, there is a README which will show you the instructions to install and run it.
+
+[Click here to see superheroes_store on github](https://github.com/cristiangrojas/superheroes_store)
+
+#### {{ DEBUG }} variable
+
+`{{ DEBUG }}` variable is used by this grunt plugin to determine when to use uncompressed files (development) and when to use compressed files (production).
+
+You will need to have this variable available in your template, to do that you should have a `context_processor` like this:
+
+https://github.com/cristiangrojas/superheroes_store/blob/master/utils/context_processors.py
+
+Keep in mind that you will need to have it in your `TEMPLATE_CONTEXT_PROCESSORS` in the `settings.py`
+
+#### Testing in local
+
+To test `grunt-django-compressor` in your development enviroment you should set `DEBUG` to `True` in the `settings.py` file, then you should run the `python manage.py collectstatic` command.
+
+A folder usually called "generated" (depends of your `STATIC_ROOT` setting) will be created in your django project folder and there will be all the statics from every application where you have an "static" folder.
+
+You'll also need to serve static files by mapping the static url:
+
+```py
+(
+    r'^static/(?P<path>.*)$',
+    'django.views.static.serve',
+    {'document_root': settings.STATIC_ROOT}
+),
+```
+
+You can see the full implementation in this file:
+
+https://github.com/cristiangrojas/superheroes_store/blob/master/superheroes_store/urls.py
+
 ### Options
 
 #### startTag
@@ -73,15 +113,13 @@ The `startTag` and `endTag` tags inside your template should looks something lik
 Type: `String`
 Default value: `''`
 
-The path where your django static files lives.
-
-This plugin currently works for the traditional django application structure: a folder called "static" inside your main application folder (where the settings.py file lives), i.e.: if your project name is "my_project" your django main application will have the same name, so the static files path will be `my_project/my_project/static/`
+DEPRECATED (Aug 22, 2014)
 
 #### destinationFolder
 Type: `String`
 Default value: `[]`
 
-The path where the compressed statics will be
+DEPRECATED (Aug 22, 2014)
 
 #### excludedDirs
 Type: `Array`
@@ -99,7 +137,7 @@ Set to true if you want to generate source maps for your compiled js files. Sour
 Type: `String`
 Default value: `''`
 
-If in a production environment your application uses an Amazon S3 bucket to store staticfiles provide the bucket url here, will be used to generate the right path names in the source map file.
+DEPRECATED (Aug 22, 2014)
 
 ### Usage Examples
 
@@ -150,10 +188,18 @@ In lieu of a formal styleguide, take care to maintain the existing coding style.
 
 ## Release History
 
+#### v0.2.5
+date: Aug 22, 2014
+##### Changes:
+* Looking for static files inside every Django app inside the project.
+* Removed unneeded options: `staticFilesPath`, `destinationFolder` and `amazonS3BucketUrl` because with the new implementation.
+* Ability to use `{% static %}` template tag or `{{ STATIC_URL }}` variable.
+* Generating well formatted source maps for javascript compiled files, now amazon bucket url option is not needed because I'm always working with keeping in mind the /generated/ folder structure.
+
 #### v0.2.21
 date: Aug 14, 2014
 ##### Changes:
-* Fixed an error with the sourceMap in json format
+* Fixed an error with the sourceMap in json format.
 
 #### v0.2.18
 date: Aug 14, 2014
