@@ -30,8 +30,6 @@ grunt.initConfig({
             my_app_javascript: {
                 startTag: '<!--SCRIPTS-->',
                 endTag: '<!--SCRIPTS END-->',
-                staticFilesPath: 'my_django_applications/static/',
-                destinationFolder: 'my_django_applications/static/dist/',
                 excludedDirs: [
                     'node_modules/',
                 ],
