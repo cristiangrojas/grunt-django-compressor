@@ -188,7 +188,12 @@ In lieu of a formal styleguide, take care to maintain the existing coding style.
 
 ## Release History
 
-#### v0.2.2
+#### v0.2.6
+date: Sept 8, 2014
+##### Changes:
+* Now the MD5 hash for all found files is being added in the compressed file name to prevent errors that occurs with files with the same name that doesn't changes in the server.
+
+#### v0.2.52
 date: Sept 5, 2014
 ##### Changes:
 * Fixed error when looking for some file in every django application static folder
