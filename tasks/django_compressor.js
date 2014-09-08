@@ -160,7 +160,7 @@ module.exports = function(grunt) {
 
               // Check where is this file by looking for it inside every
               // found static folders.
-              for(var i=0; i<=staticFolders.length; i++){
+              for(var i=0; i<staticFolders.length; i++){
                 var _filePath = path.join(staticFolders[i], filePath);
                 if( grunt.file.exists(_filePath) ){
                   filePath = _filePath;

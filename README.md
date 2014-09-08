@@ -188,6 +188,11 @@ In lieu of a formal styleguide, take care to maintain the existing coding style.
 
 ## Release History
 
+#### v0.2.2
+date: Sept 5, 2014
+##### Changes:
+* Fixed error when looking for some file in every django application static folder
+
 #### v0.2.5
 date: Aug 22, 2014
 ##### Changes:
