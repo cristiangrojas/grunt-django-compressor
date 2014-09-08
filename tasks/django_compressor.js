@@ -213,7 +213,9 @@ module.exports = function(grunt) {
               .replace(/templates/g, '') // this removes the "templates" string and generates double slashes "//"
               .replace(/\/\//g, '/') // this replaces the double slashes by only one
               .replace(/\//g, '.') // and replace all slashes with "."
-              .replace('.html', '.' + foundFilesExtension); // finally put the right extension to the file (.js or .css)
+              // finally put the right extension to the file (.js or .css) and put the
+              // string "{version}" which will be replaced with an MD5
+              .replace('.html', '.{version}.' + foundFilesExtension);
 
             if( destFileName.charAt(0) == '.' ) destFileName = destFileName.substr(1); // remove the first dot if exist
 
@@ -367,6 +369,8 @@ module.exports = function(grunt) {
 
                 fileVersion = generateMD5fromString(minifiedCSSFile);
 
+                grunt.file.delete(destFile.replace('{version}', previousMD5forAllFiles));
+                destFile = destFile.replace('{version}', MD5forAllFiles);
                 grunt.file.write(destFile, minifiedCSSFile);
 
               } else if( foundFilesExtension == 'js' ){
@@ -380,6 +384,7 @@ module.exports = function(grunt) {
 
                 if( options.generateJsSourceMaps ){
                   var sourceMapFilePath = destFile + '.map';
+                  sourceMapFilePath = sourceMapFilePath.replace('{version}', MD5forAllFiles);
 
                   // Calculate the source root
                   // Source root should be the relative path from where the dist file lives
@@ -393,6 +398,8 @@ module.exports = function(grunt) {
 
                   UglifyTheJS(foundFiles, UglifyJSOptions, function(minifiedJsFile){
                     fileVersion = generateMD5fromString(minifiedJsFile.code);
+                    grunt.file.delete(destFile.replace('{version}', previousMD5forAllFiles));
+                    destFile = destFile.replace('{version}', MD5forAllFiles);
                     grunt.file.write(destFile, minifiedJsFile.code);
 
                     var mapCopy = minifiedJsFile.map;
@@ -421,6 +428,9 @@ module.exports = function(grunt) {
                 } else {
                   UglifyTheJS(foundFiles, UglifyJSOptions, function(minifiedJsFile){
                     fileVersion = generateMD5fromString(minifiedJsFile.code);
+
+                    grunt.file.delete(destFile.replace('{version}', previousMD5forAllFiles));
+                    destFile = destFile.replace('{version}', MD5forAllFiles);
                     grunt.file.write(destFile, minifiedJsFile.code);
                   });
                 }
@@ -453,11 +463,11 @@ module.exports = function(grunt) {
               if( foundFilesExtension == 'css' ){
                 newHtmlTag = '<link rel="stylesheet" type="text/css" href="'
                   + filePathForTemplate
-                  + '?version=' + fileVersion + '">';
+                  + '">';
               } else if( foundFilesExtension == 'js' ){
                 newHtmlTag = '<script type="text/javascript" src="'
                   + filePathForTemplate
-                  + '?version=' + fileVersion + '"></script>';
+                  + '"></script>';
               }
 
               var newHtmlFile;

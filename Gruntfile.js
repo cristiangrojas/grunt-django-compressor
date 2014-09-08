@@ -34,28 +34,21 @@ module.exports = function(grunt) {
         options: {
           startTag: '<!--STYLES-->',
           endTag: '<!--STYLES END-->',
-          staticFilesPath: 'templates/static_files/',
-          destinationFolder: 'templates/static_files/dist/',
           excludedDirs: [
             'node_modules/'
           ]
         }
       },
-      /*js: {
+      js: {
         options: {
           startTag: '<!--SCRIPTS-->',
           endTag: '<!--SCRIPTS END-->',
-          // TODO look for statics inside all django applications folders
-          staticFilesPath: 'templates/segurosdigitales/static/',
-          // TODO default to staticFilesPath + 'dist/'
-          destinationFolder: 'templates/static_files/dist/',
           excludedDirs: [
             'node_modules/'
           ],
-          generateJsSourceMaps: true,
-          amazonS3BucketURL: ''
+          generateJsSourceMaps: true
         }
-      }*/
+      }
     },
 
     // Unit tests.

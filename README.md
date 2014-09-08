@@ -28,11 +28,13 @@ grunt.initConfig({
     django_compressor: {
         js: {
             my_app_javascript: {
-                startTag: '<!--SCRIPTS-->',
-                endTag: '<!--SCRIPTS END-->',
-                excludedDirs: [
-                    'node_modules/',
-                ],
+                options: {
+                    startTag: '<!--SCRIPTS-->',
+                    endTag: '<!--SCRIPTS END-->',
+                    excludedDirs: [
+                        'node_modules/'
+                    ]
+                }
             },
         },
     },
