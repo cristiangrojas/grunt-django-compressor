@@ -1,12 +1,12 @@
 /*
- * Remove a file inside a directory with part of his name.
+ * Remove the previous compressed files inside the dist folder
  * */
 
 var fs = require('fs');
 var path = require('path');
 var grunt = require('grunt');
 
-exports.removeFileWithPartName = function(folder, partName){
+exports.removeOldCompressedFiles = function(folder, destFileName){
   var exists = fs.existsSync(folder);
 
   if( !exists ) {
@@ -14,14 +14,23 @@ exports.removeFileWithPartName = function(folder, partName){
     grunt.log.writeln('"dist" folder was created, fullpath: ' + folder);
   }
 
-  var files = fs.readdirSync(folder);
+  var _arr = destFileName.split('.');
+  // Get the timestamp version part and replace with a \d+ regexp matcher
+  _arr[_arr.length - 2] = '\\d+';
+  // \\ = single backslash (escaped)
+  var _regexpLiteral = _arr.join('\\.');
+  // Create a new regular expression with that information
+  var _regexp =  new RegExp(_regexpLiteral);
 
+  // Scan all the files inside the folder and iterate over them to check
+  // which to remove
+  var files = fs.readdirSync(folder);
   for(var index in files){
     if(!files.hasOwnProperty(index)) continue;
 
     var filename = files[index];
 
-    if( filename.indexOf(partName) > -1 ){
+    if( _regexp.test(filename) ){
       var filepath = path.join(folder, filename);
       fs.unlink(filepath);
       grunt.log.writeln('Old file ' + filepath + ' was removed!');

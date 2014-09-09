@@ -19,7 +19,7 @@ module.exports = function(grunt) {
   var generateMD5fromString = require('./snippets/md5').generateMD5fromString;
   var UglifyTheJS = require('./snippets/uglify-js.js').UglifyTheJS;
   var cssReplaceUrls = require('./snippets/css-replace-urls').cssReplaceUrls;
-  var removeFileWithPartName = require('./snippets/remove-file-with-part-name').removeFileWithPartName;
+  var removeOldCompressedFiles = require('./snippets/remove-old-compressed-files').removeOldCompressedFiles;
 
   // Please see the Grunt documentation for more information regarding task
   // creation: http://gruntjs.com/creating-tasks
@@ -374,8 +374,8 @@ module.exports = function(grunt) {
                 minifiedCSSFile = cssReplaceUrls(minifiedCSSFile);
 
                 fileVersion = generateMD5fromString(minifiedCSSFile);
-
-                removeFileWithPartName(staticDestinationFolder, destFileName.split('{')[0]);
+                
+                removeOldCompressedFiles(staticDestinationFolder, destFileName);
                 destFile = destFile.replace('{version}', currentDateTime);
                 grunt.file.write(destFile, minifiedCSSFile);
 
@@ -404,7 +404,7 @@ module.exports = function(grunt) {
 
                   UglifyTheJS(foundFiles, UglifyJSOptions, function(minifiedJsFile){
                     fileVersion = generateMD5fromString(minifiedJsFile.code);
-                    removeFileWithPartName(staticDestinationFolder, destFileName.split('{')[0]);
+                    removeOldCompressedFiles(staticDestinationFolder, destFileName);
                     destFile = destFile.replace('{version}', currentDateTime);
                     grunt.file.write(destFile, minifiedJsFile.code);
 
@@ -435,7 +435,7 @@ module.exports = function(grunt) {
                   UglifyTheJS(foundFiles, UglifyJSOptions, function(minifiedJsFile){
                     fileVersion = generateMD5fromString(minifiedJsFile.code);
 
-                    removeFileWithPartName(staticDestinationFolder, destFileName.split('{')[0]);
+                    removeOldCompressedFiles(staticDestinationFolder, destFileName);
                     destFile = destFile.replace('{version}', currentDateTime);
                     grunt.file.write(destFile, minifiedJsFile.code);
                   });

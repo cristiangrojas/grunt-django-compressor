@@ -186,6 +186,11 @@ In lieu of a formal styleguide, take care to maintain the existing coding style.
 
 ## Release History
 
+#### v0.2.72
+date: Sept 9, 2014
+##### Changes:
+* Removing old files with regexp to match also the file extension
+
 #### v0.2.7
 date: Sept 9, 2014
 ##### Changes:
