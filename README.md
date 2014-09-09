@@ -189,7 +189,9 @@ In lieu of a formal styleguide, take care to maintain the existing coding style.
 #### v0.2.7
 date: Sept 9, 2014
 ##### Changes:
-* Replaced MD5 in the filename with a timestamp. * Re-implemented ?version=[MD5-code] * Fixes in documentation
+* Replaced MD5 in the filename with a timestamp.
+* Re-implemented ?version=[MD5-code]
+* Fixes in documentation
 
 #### v0.2.6
 date: Sept 8, 2014
