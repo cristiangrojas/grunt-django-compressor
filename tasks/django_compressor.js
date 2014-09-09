@@ -19,6 +19,7 @@ module.exports = function(grunt) {
   var generateMD5fromString = require('./snippets/md5').generateMD5fromString;
   var UglifyTheJS = require('./snippets/uglify-js.js').UglifyTheJS;
   var cssReplaceUrls = require('./snippets/css-replace-urls').cssReplaceUrls;
+  var removeFileWithPartName = require('./snippets/remove-file-with-part-name').removeFileWithPartName;
 
   // Please see the Grunt documentation for more information regarding task
   // creation: http://gruntjs.com/creating-tasks
@@ -37,6 +38,10 @@ module.exports = function(grunt) {
         // Should the django_compressor generates javascript source maps?
         generateJsSourceMaps: false
       });
+
+      // Will be used for the version of the compressed files and for the modified
+      // property of the versions json.
+      var currentDateTime = new Date().getTime();
 
       // Get the Django project name
       // -----------------------------------------------------------------------------
@@ -369,8 +374,8 @@ module.exports = function(grunt) {
 
                 fileVersion = generateMD5fromString(minifiedCSSFile);
 
-                grunt.file.delete(destFile.replace('{version}', previousMD5forAllFiles));
-                destFile = destFile.replace('{version}', MD5forAllFiles);
+                removeFileWithPartName(staticDestinationFolder, destFileName.split('{')[0]);
+                destFile = destFile.replace('{version}', currentDateTime);
                 grunt.file.write(destFile, minifiedCSSFile);
 
               } else if( foundFilesExtension == 'js' ){
@@ -384,7 +389,7 @@ module.exports = function(grunt) {
 
                 if( options.generateJsSourceMaps ){
                   var sourceMapFilePath = destFile + '.map';
-                  sourceMapFilePath = sourceMapFilePath.replace('{version}', MD5forAllFiles);
+                  sourceMapFilePath = sourceMapFilePath.replace('{version}', currentDateTime);
 
                   // Calculate the source root
                   // Source root should be the relative path from where the dist file lives
@@ -398,8 +403,8 @@ module.exports = function(grunt) {
 
                   UglifyTheJS(foundFiles, UglifyJSOptions, function(minifiedJsFile){
                     fileVersion = generateMD5fromString(minifiedJsFile.code);
-                    grunt.file.delete(destFile.replace('{version}', previousMD5forAllFiles));
-                    destFile = destFile.replace('{version}', MD5forAllFiles);
+                    removeFileWithPartName(staticDestinationFolder, destFileName.split('{')[0]);
+                    destFile = destFile.replace('{version}', currentDateTime);
                     grunt.file.write(destFile, minifiedJsFile.code);
 
                     var mapCopy = minifiedJsFile.map;
@@ -429,8 +434,8 @@ module.exports = function(grunt) {
                   UglifyTheJS(foundFiles, UglifyJSOptions, function(minifiedJsFile){
                     fileVersion = generateMD5fromString(minifiedJsFile.code);
 
-                    grunt.file.delete(destFile.replace('{version}', previousMD5forAllFiles));
-                    destFile = destFile.replace('{version}', MD5forAllFiles);
+                    removeFileWithPartName(staticDestinationFolder, destFileName.split('{')[0]);
+                    destFile = destFile.replace('{version}', currentDateTime);
                     grunt.file.write(destFile, minifiedJsFile.code);
                   });
                 }
@@ -463,11 +468,11 @@ module.exports = function(grunt) {
               if( foundFilesExtension == 'css' ){
                 newHtmlTag = '<link rel="stylesheet" type="text/css" href="'
                   + filePathForTemplate
-                  + '">';
+                  + '?version=' + fileVersion + '">';
               } else if( foundFilesExtension == 'js' ){
                 newHtmlTag = '<script type="text/javascript" src="'
                   + filePathForTemplate
-                  + '"></script>';
+                  + '?version=' + fileVersion + '"></script>';
               }
 
               var newHtmlFile;
@@ -516,7 +521,7 @@ module.exports = function(grunt) {
         }
       }); // end HTML files forEach
 
-      versionsJsonFileContent['modified'] = new Date().getTime();
+      versionsJsonFileContent['modified'] = currentDateTime;
       grunt.file.write(versionsJsonFilePath, JSON.stringify(versionsJsonFileContent, null, 4));
       grunt.log.writeln(chalk.underline.cyan(versionsJsonFilePath) + ' successfully updated.');
     });

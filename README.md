@@ -26,15 +26,13 @@ In your project's Gruntfile, add a section named `django_compressor` to the data
 ```js
 grunt.initConfig({
     django_compressor: {
-        js: {
-            my_app_javascript: {
-                options: {
-                    startTag: '<!--SCRIPTS-->',
-                    endTag: '<!--SCRIPTS END-->',
-                    excludedDirs: [
-                        'node_modules/'
-                    ]
-                }
+        my_app_javascript: {
+            options: {
+                startTag: '<!--SCRIPTS-->',
+                endTag: '<!--SCRIPTS END-->',
+                excludedDirs: [
+                    'node_modules/'
+                ]
             },
         },
     },
@@ -171,13 +169,13 @@ Based on this structure our gruntfile should be:
 grunt.initConfig({
     django_compressor: {
         superheroes_store_javascript: {
-            startTag: '<!--SCRIPTS-->',
-            endTag: '<!--SCRIPTS END-->',
-            staticFilesPath: 'superheroes_store/static/',
-            destinationFolder: 'superheroes_store/static/dist/',
-            excludedDirs: [
-                'node_modules/',
-            ],
+            options: {
+                startTag: '<!--SCRIPTS-->',
+                endTag: '<!--SCRIPTS END-->',
+                excludedDirs: [
+                    'node_modules/',
+                ]
+            }
         }
     },
 });
@@ -187,6 +185,11 @@ grunt.initConfig({
 In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Lint and test your code using [Grunt](http://gruntjs.com/).
 
 ## Release History
+
+#### v0.2.7
+date: Sept 9, 2014
+##### Changes:
+* Replaced MD5 in the filename with a timestamp. * Re-implemented ?version=[MD5-code] * Fixes in documentation
 
 #### v0.2.6
 date: Sept 8, 2014
