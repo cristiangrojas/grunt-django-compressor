@@ -7,6 +7,13 @@ var path = require('path');
 var grunt = require('grunt');
 
 exports.removeFileWithPartName = function(folder, partName){
+  var exists = fs.existsSync(folder);
+
+  if( !exists ) {
+    fs.mkdirSync(folder);
+    grunt.log.writeln('"dist" folder was created, fullpath: ' + folder);
+  }
+
   var files = fs.readdirSync(folder);
 
   for(var index in files){

@@ -103,6 +103,7 @@ module.exports = function(grunt) {
         // -----------------------------------------------------------------------
         var indexOfStartTag = htmlFile.indexOf(options.startTag);
         if( indexOfStartTag > -1 ){
+          grunt.log.writeln(grunt.util.linefeed);
           grunt.log.writeln(chalk.yellow(options.startTag) + ' tag was found in "' + chalk.underline.cyan(htmlFilePath) + '"');
 
           // send the indexOfStartTag number to start looking at this point
@@ -523,6 +524,7 @@ module.exports = function(grunt) {
 
       versionsJsonFileContent['modified'] = currentDateTime;
       grunt.file.write(versionsJsonFilePath, JSON.stringify(versionsJsonFileContent, null, 4));
+      grunt.log.writeln(grunt.util.linefeed);
       grunt.log.writeln(chalk.underline.cyan(versionsJsonFilePath) + ' successfully updated.');
     });
 };
